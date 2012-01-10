@@ -1,4 +1,4 @@
 
 exports.genResponse = function(request, gets) {
-	return null;
+   return null;
 };

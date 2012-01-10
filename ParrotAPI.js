@@ -21,39 +21,39 @@ app.listen(8080);
 app.post(adminPageUrl, function(req, res) {
       var contents = JSON.parse(req.data);
       if(contents.addGet) {
-      	for(var getsAdd in contents.addGet) {
-      		if(parrot.gets[getsAdd]) {
-      			//\get already added...
-      		}else {
-      			parrot.gets[getsAdd] = Object.create(null);
-      		}
-      	}
+         for(var getsAdd in contents.addGet) {
+            if(parrot.gets[getsAdd]) {
+               //\get already added...
+            }else {
+               parrot.gets[getsAdd] = Object.create(null);
+            }
+         }
       }
       
       if(contents.addResponse) {
-      	for(var responsesAdd in contents.addReponse) {
-      		if(responsesAdd.get) {
-      			if(parrot.gets[responsesAdd.get]) {
-      				
-      			}
-      		}
-      	}
+         for(var responsesAdd in contents.addReponse) {
+            if(responsesAdd.get) {
+               if(parrot.gets[responsesAdd.get]) {
+                  
+               }
+            }
+         }
       }
       
       if(contents.removeResponse) {
-      	
+         
       }
       
       if(contents.addToWhiteList) {
-      	
+         
       }
       
       if(contents.removeFromWhiteList) {
-      	
+         
       }
       
       if(contents.addToIgnore) {
-      	
+         
       }
       
       
