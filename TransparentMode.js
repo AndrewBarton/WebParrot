@@ -1,7 +1,4 @@
-function TranslucentMode() {
-	this.genResponse = genResponse;
-}
 
-function genResponse(request, gets) {
+exports.genResponse = function(request, gets) {
 	return null;
-}
+};

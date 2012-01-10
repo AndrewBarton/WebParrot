@@ -1,6 +1,7 @@
 var http = require('http');
-
-var app = require('express').createServer();
+var translucent = require('./TranslucentMode');
+//var api = require('./ParrotAPI');
+//
 
 var fileSystem = require('fs');
 
@@ -9,9 +10,9 @@ var gets = Object.create(null);
 var whiteList = Object.create(null);
 
 
-function getGets() {
+exports.getGets = function() {
 	return gets;
-}
+};
 
 function setGets(newGets) {
 	gets = newGets;
@@ -35,11 +36,11 @@ function setMode(newMode) {
 
 
 
-var mode = TranslucentMode();
+var mode = translucent.genResponse;
 //credit for the proxy part of the server to http://www.catonmat.net/http-proxy-in-nodejs/
 http.createServer(function(request, response) {
    
-	
+	console.log("request received");
 	
 	
    //
@@ -47,52 +48,73 @@ http.createServer(function(request, response) {
    //
   var proxy = http.createClient(80, request.headers['host']);
   //returns null if in transparent mode or if unknown get in translucent mode.
-  var parrotResponse = mode.response(request, gets);
-  if(parrotResponse == null) {
+  var parrotResponse = mode(request, gets);
+  var delay = false;
+  if(!parrotResponse) {
+	  
+	  
      
      //make the request to send to the server
      var proxy_request = proxy.request(request.method, request.url, request.headers);
      //save the request to be used later
-     gets[request.headers.host + request.url] = { myRequest : request};
+     gets[request.url] = { myRequest : request};
      //add the listener for the response from the server
      proxy_request.addListener('response', function (proxy_response) {
+   	  console.log("response from server received");
           //add the listener for the data of the http response
           proxy_response.addListener('data', 
                 function(chunk) {
-                //save the response to be used later
-                gets[request.headers.host + request.url].data = chunk;
-                  response.write(chunk, 'binary');
+         	      console.log("data from server received");
+                   //save the response to be used later
+                   gets[request.url].data = chunk;
+                   //
+                   if(delay) {
+                  	 console.log("delay encountered... why?!")
+                  	 response.end();
+                   }
                 }
           );
           
           proxy_response.addListener('end', 
                 function() {
-                  response.end();
+         	 	  if(gets[request.url].data) {
+                    console.log("end from server received");
+              	 	  response.write(gets[request.url].data);
+                    response.end();
+         	 	  }else {
+         	 		 delay = true;
+         	 	  }
+         	 	  
                 }
           );
           //lastly save the headers of the response for later
-          gets[request.headers.host + request.url].headers = proxy_response.headers;
+          gets[request.url].headers = proxy_response.headers;
+          gets[request.url].statusCode = proxy_response.statusCode;
           //and write out the headers
+          console.log("writing out head for response");
           response.writeHead(proxy_response.statusCode, proxy_response.headers);
         });
         
         //when the data part of the request is received, write out the data part of the 
          //request to the server
         request.addListener('data', function(chunk) {
+      	  console.log("data from client received");
           proxy_request.write(chunk, 'binary');
         });
         //same as above except with the end of the request
         request.addListener('end', function() {
+      	  console.log("end from client received");
           proxy_request.end();
         });
   }else {
-     response.write(parrotReponse.chunk, 'binary');
+	  //console.log(parrotResponse);
+     
      if(parrotResponse.headers) {
         response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
      }else {
         response.writeHead(parrotResponse.statusCode);
      }
-     
+     response.write(parrotResponse.body, 'binary');
      response.end();
      
   }
@@ -101,10 +123,4 @@ http.createServer(function(request, response) {
   
 }).listen(8080);
 
-
-
-
-//////////////////\\\\\\\\\\\\\\\\\
-var proxyMode = { TRANSLUCENT : translucentMode(),
-                  TRANSPARENT : transparentMode(),
-                  OPAQUE : opaqueMode()};
+console.log("running!");
