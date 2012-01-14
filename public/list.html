@@ -1,0 +1,47 @@
+<!--   Copyright Andrew Barton andrewbbarton@gmail.com,  2012
+       http://www.opensource.org/licenses/MIT, see LICENSE -->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+  <script type="text/javascript">
+     var props = Object.create(null);
+     REPLACEME
+     function getSelected() {
+        var returnMe = [];
+        var elems = document.getElementsByClassName('ui-selected')
+        for( var i = 0; i < elems.length; i++) {
+           returnMe.push(elems[i].id);
+        }
+        return returnMe;
+     }
+     
+     function removeSelected() {
+        var elems = document.getElementsByClassName('ui-selected')
+        for( var i = 0; i < elems.length; i++) {
+           $(elems[i].id).remove();
+        }
+     }
+  </script>
+  <style type="text/css">
+#selectable .ui-selecting {
+   background: DarkCyan ;
+   color: white;
+}
+#selectable .ui-selected {
+   background: Red;
+   color: white;
+}
+#selectable { list-style-type: none; margin: 0; padding: 0;}
+</style>
+
+  <script>
+  $(document).ready(function() {
+    $("#selectable").selectable();
+  });
+  </script>
+</head>
+<body>

@@ -1,0 +1,108 @@
+<!--   Copyright Andrew Barton andrewbbarton@gmail.com,  2012
+       http://www.opensource.org/licenses/MIT, see LICENSE -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello HTML</title>
+     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+    <script type"text/javascript">
+    
+        //remove request
+          //get response text
+          //get request text
+          //set request to ignore
+          //set request to lock
+          //change mode
+    function displayDetails() {
+       
+    }
+    function onRemove(){
+       var selected = Object.create(null);
+       selected.removeRequest = document.getElementById('requestList').contentWindow.getSelected();
+       
+       
+       var xmlhttp=new XMLHttpRequest();
+       xmlhttp.onreadystatechange = function() {
+          if(xmlhttp.readyState == 2) {
+             document.getElementById('requestList').contentWindow.removeSelected();
+          }
+       }
+       alert(JSON.stringify(selected));
+       var url = 'http://' + document.URL.split('/')[2] + '/admin';
+       
+       xmlhttp.open("POST", url, true);
+       xmlhttp.setRequestHeader('Content-Type', "application/json");
+       xmlhttp.send(JSON.stringify(selected));
+    }
+    function onIgnore(){
+       
+    }
+    function onLock(){
+       
+    }
+    function onModeChange(){
+       
+    }
+    function onDisplayThings(){
+       
+    }
+    </script>
+    <style type="text/css">
+      html, body {height:95%;}
+      p.reqText {text-align:left;}
+    </style>
+  </head>
+  <body>
+  
+  <table width=100% height=100% id=mainTable>
+  <tr id="row1">
+      <th width=50% height=100% id="column1">
+         <iframe src="./reqList" id="requestList" width=100% height=100% scrolling=auto></iframe>
+      </th>
+      <th>
+      <form name="theForm">
+         <table height=100%>
+         <tr>
+            <!--buttons go here-->
+            <th>
+	            <button type=button onclick="onRemove()">Remove Request</button>
+	            <button type=button onclick="onIgnore()">Toggle Ignore</button>
+	            <button type=button onclick="onLock()">Toggle Lock</button>
+	            <select>
+	              <option>Translucent</option>
+	              <option>Transparent</option>
+	              <option>Opaque</option>
+	            </select>
+            </th>
+         </tr>
+         <tr>
+            <th>
+        
+		         <p id="ptext" class="reqText">ID:<br>
+               URL:<br>
+               Locked:<br>
+               Ignored:<br></p>
+		         <select>
+		          <option>Render response</option>
+		          <option>Response source</option>
+		          <option>Request source</option>
+		         </select>
+		         <button type=button>Display</button>
+	          </th>
+         </tr>
+         <tr height=100%>
+            <th height=100%>
+               <iframe id=preview width=100% height=100%></iframe>
+            </th>
+         </tr>
+         </table>
+	      </form>
+      </th>
+      
+      </tr>
+  </table>
+	
+	
+  </body>
+</html>

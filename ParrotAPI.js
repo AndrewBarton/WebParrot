@@ -1,81 +1,79 @@
-var parrot = require('./WebParrot.js');
-var app = require('express').createServer();
+// Copyright Andrew Barton andrewbbarton@gmail.com,  2012
+// http://www.opensource.org/licenses/MIT, see LICENSE
+
+var parrot = require('./WebParrot');
+var express = require('express');
+
+
+var app = express.createServer();
+app.use(express.bodyParser());
+exports.app = app;
 var adminPageUrl = "/admin";
 app.get(adminPageUrl, function(req, res){
-     var pageJs = require(req.url);
-     var page = pageJs.fill();
      res.send(page);
    });
 
-app.listen(8080);
+
+app.use(express.static(__dirname + '/public'));
+
+app.listen(8081);
    
-   
+
 //possible actions =
-   //add get
-   //add response
-   //remove response
-   //add to whiteList
-   //remove from whiteList
-   //add get to ignore list
-   //
+   //remove request
+   //get response text
+   //get request text
+   //set request to ignore
+   //set request to lock
+   //change mode
+   
 app.post(adminPageUrl, function(req, res) {
-      var contents = JSON.parse(req.data);
-      if(contents.addGet) {
-         for(var getsAdd in contents.addGet) {
-            if(parrot.gets[getsAdd]) {
-               //\get already added...
-            }else {
-               parrot.gets[getsAdd] = Object.create(null);
-            }
+      var contents = req.body;
+      console.log(contents);
+      if(contents.removeRequest) {
+         for(var removes in contents.removeRequest) {
+            parrot.removeReq(removes.ID);
          }
       }
       
-      if(contents.addResponse) {
-         for(var responsesAdd in contents.addReponse) {
-            if(responsesAdd.get) {
-               if(parrot.gets[responsesAdd.get]) {
-                  
-               }
-            }
+      if(contents.getResponseText) {
+         
+      }
+      
+      if(contents.getRequestText) {
+         
+      }
+      
+      if(contents.setIgnore) {
+         for(var ignores in contents.setIgnore) {
+            parrot.setIgnore(ignores.ID);
          }
       }
       
-      if(contents.removeResponse) {
-         
+      if(contents.setLock) {
+         for(var locks in contents.setLock) {
+            parrot.setLock(locks.ID);
+         }
       }
-      
-      if(contents.addToWhiteList) {
-         
+      if(contents.setMode) {
+         parrot.setMode(contents.setMode.mode);
       }
-      
-      if(contents.removeFromWhiteList) {
-         
-      }
-      
-      if(contents.addToIgnore) {
-         
-      }
-      
       
 });
 
-function getWhiteList() {
+exports.getWhiteList = function () {
    return parrot.getWhiteList();
-}
+};
 
-function getCachedGets() {
-   return parrot.getGets();
-}
+exports.getCachedReqsuests = function () {
+   return parrot.getReqs();
+};
 
-function getCachedResponse(get) {
-   return parrot.getGets().get;
-}
+exports.getCachedRequest = function (ID) {
+   return parrot.getReqs()[ID];
+};
 
-function getMode() {
+exports.getMode =  function () {
    return parrot.getMode();
-}
-
-function setMode(newMode) {
-   
-}
-
+};
+var page = require('./public/adminPage');
