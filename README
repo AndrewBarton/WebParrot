@@ -2,16 +2,20 @@
 
 Readme for WebParrot
 
-Web parrot is designed to facilitate repeatable client side testing by emulating your server.
-It does so by listening to your http traffic then replaying what it has heard.
+Web parrot is designed to facilitate repeatable client side testing by emulating
+ your server. It does so by listening to your http traffic then replaying 
+ what it has heard.
 
 For example, I try to access www.example.org. 
-The first time I do so the parrot acts like a normal proxy and just relays the page.
-The next time I access the www.example.org the parrot acts like the server, reading the request and sending the response it heard earlier.
+The first time I do so the parrot acts like a normal proxy and just relays
+ the page. The next time I access the www.example.org the parrot acts like
+ the server, reading the request and sending the response it heard earlier.
 
 To run WebParrot use node.js to run WebParrot.js
-"node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port] [-w webPort]"
-Next set your browser to use your machine as a proxy. By default WebParrot uses port 8080. By default the admin pages use port 8081
+"node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port]
+ [-w webPort]"
+Next set your browser to use your machine as a proxy. By default WebParrot
+uses port 8080. By default the admin pages use port 8081
 Be sure to clear your browser's cache before using (see cache issues below).
 
 
@@ -19,9 +23,12 @@ Be sure to clear your browser's cache before using (see cache issues below).
 
 
 WebParrot has three modes:
-translucent: In this mode any unknown request will be sent to the server while any known request will be parroted.
-transparent: In this mode all requests are sent to the server and the parrot acts like a normal proxy, however all responses will be recorded.
-opaque: In this mode no requests will be sent to the server, any unknown requests will receive a 404. Do not start the parrot in opaque mode.
+translucent: In this mode any unknown request will be sent to the server while any
+  known request will be parroted.
+transparent: In this mode all requests are sent to the server and the parrot acts 
+  like a normal proxy, however all responses will be recorded.
+opaque: In this mode no requests will be sent to the server, any unknown requests
+  will receive a 404. Do not start the parrot in opaque mode.
 
 
 
@@ -34,22 +41,30 @@ WebParrot has three logging levels (verbosity):
 
 
 Cache issues:
-If you are trying to view a page you have viewed before your browser may send a cache check instead of a normal GET. 
-If the page has no changed then the server will response by saying that the cached page is correct. This response will be recorded by the parrot.
-Thus you may try to reload from the parrot only to get a cache response. To avoid this issue either clear your browser's cache before using or
-set the parrot to ignore that particular request (via the admin page).
+If you are trying to view a page you have viewed before your browser may send 
+ a cache check instead of a normal GET. If the page has no changed then the 
+ server will response by saying that the cached page is correct. This response
+ will be recorded by the parrot. Thus you may try to reload from the parrot
+ only to get a cache response. To avoid this issue either clear your browser's
+ cache before using or set the parrot to ignore that particular request
+ (via the admin page).
 
 
 Locking and ignoring:
-Requests can be set to be locked and/or ignored. Locking a request makes it so that the response will not change, even if a new response is seen.
-(only makes sense in transparent mode or response is set to ignored). Ignoring a request makes it so that the request is always treated as unknown. 
-Thus in translucent mode the server will always receive the request and in opaque mode a 404 will always be delivered (only makes sense in translucent mode).
+Requests can be set to be locked and/or ignored. Locking a request makes it so
+ that the response will not change, even if a new response is seen. (only makes
+ sense in transparent mode or response is set to ignored). Ignoring a request
+ makes it so that the request is always treated as unknown. Thus in translucent
+ mode the server will always receive the request and in opaque mode a 404 will
+ always be delivered (thus locking only makes sense in translucent mode).
 
 
 
 Admin page:
-WebParrot also launches a http server in addition to the proxy server. This server will deliver pages in the /public/ folder. These pages are used to control 
-WebParrot via the parrot API. See API.txt for more information about the API.
+WebParrot also launches a http server in addition to the proxy server. By default
+ this serves '/admin.html'. This server will deliver any pages in the /public/
+  folder. These pages are used to control WebParrot via the parrot API.
+  See API.txt for more information about the API.
 
 
 Copyright Andrew Barton andrewbbarton@gmail.com,  2012

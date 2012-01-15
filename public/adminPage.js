@@ -11,18 +11,6 @@ var starter = '';
 function onStarterRead(err, data) {
    starter = data;
 }
-/*
- * WHITELIST KILLED
-
-app.get('/whiteList', function(req, res) {
-   var whites = parrotAPI.getWhiteList();
-   var totalString = starter + '\n<ul id="selectable">';
-   for(white in whites) {
-      totalString += '<li>' + white + '</li>';
-   }
-   totalString += '</ul> \n</body> \n</html>';
-});
-   */
 
 app.get('/reqList', function(req, res) {
    var reqs = parrotAPI.getCachedReqsuests();
@@ -30,8 +18,8 @@ app.get('/reqList', function(req, res) {
    var propString = '';
    for(req in reqs) {
       actualReq = reqs[req];
-      propString += 'props["' + actualReq.myRequest.url + actualReq.hash + '"] = { url:"' + actualReq.myRequest.url + '", lock:"';
-      propString += actualReq.lock + '", ignore: "' + actualReq.ignore + '"};\n';
+      propString += 'props["' + actualReq.myRequest.url + actualReq.hash + '"] = { url:"' + actualReq.myRequest.url + '", lock:';
+      propString += actualReq.lock + ', ignore: ' + actualReq.ignore + '};\n';
       totalString += '<li class="ui-selectee" id= "' + actualReq.myRequest.url + actualReq.hash + '">' + actualReq.myRequest.url + "     " + actualReq.hash + '</li>\n';
    }
    totalString += '</ul> \n</body> \n</html>';

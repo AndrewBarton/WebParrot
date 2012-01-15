@@ -9,8 +9,18 @@
   <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
   <script type="text/javascript">
      var props = Object.create(null);
+     //will be replaced by props loaded in by the server in adminPage.js
      REPLACEME
+     
      function getSelected() {
+        var returnMe = [];
+        var elems = document.getElementsByClassName('ui-selected')
+        for( var i = 0; i < elems.length; i++) {
+           returnMe.push(props[elems[i].id]);
+        }
+        return returnMe;
+     }
+     function getSelectedIDs() {
         var returnMe = [];
         var elems = document.getElementsByClassName('ui-selected')
         for( var i = 0; i < elems.length; i++) {
@@ -18,12 +28,14 @@
         }
         return returnMe;
      }
-     
-     function removeSelected() {
-        var elems = document.getElementsByClassName('ui-selected')
-        for( var i = 0; i < elems.length; i++) {
-           $(elems[i].id).remove();
+     function removeSelectables(removes) {
+        var selectable = document.getElementById('selectable');
+        for(var i = 0; i < removes.length; i++) {
+           selectable.removeChild(document.getElementById(removes[i]));
         }
+     }
+     function bindMe(newF) {
+        $("#selectable").bind('selectableselected', newF);
      }
   </script>
   <style type="text/css">
@@ -32,7 +44,7 @@
    color: white;
 }
 #selectable .ui-selected {
-   background: Red;
+   background: DarkCyan;
    color: white;
 }
 #selectable { list-style-type: none; margin: 0; padding: 0;}
@@ -41,7 +53,9 @@
   <script>
   $(document).ready(function() {
     $("#selectable").selectable();
+   
   });
   </script>
 </head>
 <body>
+<!-- will be finished off dynamically by the sever in adminPage.js -->

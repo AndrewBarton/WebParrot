@@ -3,20 +3,17 @@
 
 var parrot = require('./WebParrot');
 var express = require('express');
-
+var log = require('./parrotLogger');
 
 var app = express.createServer();
 app.use(express.bodyParser());
 exports.app = app;
-var adminPageUrl = "/admin";
-app.get(adminPageUrl, function(req, res){
-     res.send(page);
-   });
+var apiPageUrl = "/API";
 
 
 app.use(express.static(__dirname + '/public'));
-
-app.listen(8081);
+log.log("Web server running on port: " + parrot.webPort, 0);
+app.listen(parrot.webPort);
    
 
 //possible actions =
@@ -27,37 +24,44 @@ app.listen(8081);
    //set request to lock
    //change mode
    
-app.post(adminPageUrl, function(req, res) {
+app.post(apiPageUrl, function(req, res) {
       var contents = req.body;
-      console.log(contents);
       if(contents.removeRequest) {
-         for(var removes in contents.removeRequest) {
-            parrot.removeReq(removes.ID);
+         for(var i = 0; i < contents.removeRequest.length; i++) {
+            parrot.removeReq(contents.removeRequest[i]);
          }
+         res.send(JSON.stringify(req.body));
       }
       
       if(contents.getResponseText) {
-         
+         res.send(JSON.stringify(getCachedRequest(resText.ID).myRequest));
       }
       
       if(contents.getRequestText) {
-         
+         res.send(JSON.stringify(getCachedRequest(resText.ID).data));
       }
       
-      if(contents.setIgnore) {
-         for(var ignores in contents.setIgnore) {
-            parrot.setIgnore(ignores.ID);
+      if(contents.toggleIgnore) {
+         for(var i = 0; i < contents.toggleIgnore.length; i++) {
+            parrot.toggleIgnore(contents.toggleIgnore[i]);
          }
+         res.send(JSON.stringify(req.body));
       }
       
-      if(contents.setLock) {
-         for(var locks in contents.setLock) {
-            parrot.setLock(locks.ID);
+      if(contents.toggleLock) {
+         for(var i = 0; i < contents.toggleLock.length; i++) {
+            parrot.toggleLock(contents.toggleLock[i]);
          }
+         res.send(JSON.stringify(req.body));
       }
       if(contents.setMode) {
          parrot.setMode(contents.setMode.mode);
+         res.send();
       }
+      if(contents.getMode) {
+         res.send(JSON.stringify(getMode()));
+      }
+      
       
 });
 

@@ -7,50 +7,101 @@
     <title>Hello HTML</title>
      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script type"text/javascript">
+	    var blankLocked = 'Locked: ';
+	    var blankIgnored = 'Ignored: ';
+       var url = 'http://' + document.URL.split('/')[2] + '/api';
+          
+       //update the text shown on the right
+       var displayOverview = function(event, ui) {
+	       var sele = document.getElementById('requestList').contentWindow.getSelected();
+	       //if there are mutliple selected then this function doesn't make sense
+	       if(sele.length == 1) {
+	          
+	          sele = sele[0];
+	          document.getElementById('urlLink').href = sele.url;
+	          document.getElementById('urlLink').textContent = sele.url;
+	          document.getElementById('lockedText').textContent = blankLocked + sele.lock;
+	          document.getElementById('ignoredText').textContent = blankIgnored + sele.ignore;
+	       }else {
+	          document.getElementById('urlLink').href = '';
+	          document.getElementById('urlLink').textContent = '';
+	          document.getElementById('lockedText').textContent = blankLocked;
+	          document.getElementById('ignoredText').textContent = blankIgnored;
+	       }
+	   };
+        
+        //on window load bind the function for displaying the overview to the list of selectables in list.
+      window.addEventListener('load', function() {
+         document.getElementById('requestList').contentWindow.bindMe(displayOverview)
+      }, false)
+          
+	          
+	    function displayDetails() {
+	       
+	    }
+	         
+	    function onRemove(){
+	       var selected = Object.create(null);
+	       selected.removeRequest = document.getElementById('requestList').contentWindow.getSelectedIDs();
+	       for(var i = 1; i < selected.length; i++) {
+	          selected[i] = selected[i].id;
+	       }
+	      
+	      var xmlhttp=new XMLHttpRequest();
+	      xmlhttp.onreadystatechange = function() {
+	         if(xmlhttp.readyState == 4) {
+	            var removes = jQuery.parseJSON(xmlhttp.responseText);
+	            document.getElementById('requestList').contentWindow.removeSelectables(removes.removeRequest);
+	         }
+	      }
+	      
+	      xmlhttp.open("POST", url, true);
+	      xmlhttp.setRequestHeader('Content-Type', "application/json");
+	      xmlhttp.send(JSON.stringify(selected));
+	   }
+	    //used for both locking and ignoring, but all the brackets are kinda confusing...
+	    function onToggle(type){
+	       var lowerType = type.toLowerCase();
+	       var selected = Object.create(null);
+	       selected["toggle" + type] = document.getElementById('requestList').contentWindow.getSelectedIDs();
+	       for(var i = 1; i < selected.length; i++) {
+	          selected[i] = selected[i].id;
+	       }
+	       
+	       var xmlhttp=new XMLHttpRequest();
+	       //when we get the response it will contain the urls to toggle, so we toggle them then.
+	       //we could toggle them from the button press, but if the request is lost then the server
+	       //and client will be desynced.
+	       xmlhttp.onreadystatechange = function() {
+	          if(xmlhttp.readyState == 4) {
+	             var toggles = jQuery.parseJSON(xmlhttp.responseText)["toggle" + type];
+	             var props = document.getElementById('requestList').contentWindow.props;
+	             for(var j = 0; j < toggles.length; j++) {
+	                
+	                var prop = props[toggles[j]];
+	                //toggle the prop we want by looking at props[url] where url at position j in toggles
+	                //then get the attribute we want to toggle is lowertype (either ignore or lock)
+	                props[toggles[j]][lowerType] = !props[toggles[j]][lowerType]
+	                //cause the overview text to update
+	                displayOverview(null, null);
+	             }
+	             
+	          }
+	       }
+	      
+	       
+	       xmlhttp.open("POST", url, true);
+	       xmlhttp.setRequestHeader('Content-Type', "application/json");
+	       xmlhttp.send(JSON.stringify(selected));
+	    }
     
-        //remove request
-          //get response text
-          //get request text
-          //set request to ignore
-          //set request to lock
-          //change mode
-    function displayDetails() {
-       
-    }
-    function onRemove(){
-       var selected = Object.create(null);
-       selected.removeRequest = document.getElementById('requestList').contentWindow.getSelected();
-       
-       
-       var xmlhttp=new XMLHttpRequest();
-       xmlhttp.onreadystatechange = function() {
-          if(xmlhttp.readyState == 2) {
-             document.getElementById('requestList').contentWindow.removeSelected();
-          }
-       }
-       alert(JSON.stringify(selected));
-       var url = 'http://' + document.URL.split('/')[2] + '/admin';
-       
-       xmlhttp.open("POST", url, true);
-       xmlhttp.setRequestHeader('Content-Type', "application/json");
-       xmlhttp.send(JSON.stringify(selected));
-    }
-    function onIgnore(){
-       
-    }
-    function onLock(){
-       
-    }
-    function onModeChange(){
-       
-    }
-    function onDisplayThings(){
-       
-    }
+	    function onModeChange(){
+	       
+	    }
     </script>
     <style type="text/css">
       html, body {height:95%;}
-      p.reqText {text-align:left;}
+      p {text-align:left;}
     </style>
   </head>
   <body>
@@ -64,11 +115,10 @@
       <form name="theForm">
          <table height=100%>
          <tr>
-            <!--buttons go here-->
             <th>
 	            <button type=button onclick="onRemove()">Remove Request</button>
-	            <button type=button onclick="onIgnore()">Toggle Ignore</button>
-	            <button type=button onclick="onLock()">Toggle Lock</button>
+	            <button type=button onclick="onToggle('Ignore')">Toggle Ignore</button>
+	            <button type=button onclick="onToggle('Lock')">Toggle Lock</button>
 	            <select>
 	              <option>Translucent</option>
 	              <option>Transparent</option>
@@ -78,13 +128,11 @@
          </tr>
          <tr>
             <th>
-        
-		         <p id="ptext" class="reqText">ID:<br>
-               URL:<br>
-               Locked:<br>
-               Ignored:<br></p>
+               <p id="urlText">URL:<a id=urlLink></a><br></p>
+               <p id= "lockedText">Locked:<br></p>
+               <p id= "ignoredText">Ignored:<br></p>
 		         <select>
-		          <option>Render response</option>
+		          <option>Response render</option>
 		          <option>Response source</option>
 		          <option>Request source</option>
 		         </select>

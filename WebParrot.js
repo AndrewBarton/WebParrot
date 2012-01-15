@@ -6,11 +6,14 @@ var http = require('http');
 var translucent = require('./TranslucentMode');
 var transparent = require('./TransparentMode');
 var opaque = require('./OpaqueMode');
-var api = require('./ParrotAPI');
+
 var crypto = require('crypto');
 var log = require('./parrotLogger');
 var mdSum = crypto.createHash('md5');
 
+
+var proxyPort = 8080;
+exports.webPort = 8081;
 var reqs = Object.create(null);
 var whiteList = [];
 var mode = translucent.genResponse;
@@ -21,7 +24,10 @@ function parseArgs() {
    for(var i = 2; i < args.length; i++) {
       if(args[i] == '-v') {
          i++;
-         log.logLevel = args[i];
+         if(args[i]) {
+            log.logLevel = args[i];
+         }
+         
       }
       if(args[i] == '-m') {
          i++;
@@ -35,12 +41,18 @@ function parseArgs() {
       }
       if(args[i] == '-w') {
          i++;
+         if(args[i]) {
+            this.webPort = args[i];
+         }
       }
-      if(args[i] == '-i') {
+      if(args[i] == '-p') {
          i++;
+         if(args[i]) {
+            proxyPort = args[i];
+         }
       }
       if(args[i] == '-h') {
-         
+         //\add help
       }
    }
 }
@@ -50,9 +62,10 @@ function parseArgs() {
 
 parseArgs();
 
+var api = require('./ParrotAPI');
 //credit for the proxy part of the server to http://www.catonmat.net/http-proxy-in-nodejs/
-http.createServer(requestBegin).listen(8080);
-
+http.createServer(requestBegin).listen(proxyPort);
+log.log("Proxy running on port: " + proxyPort, 0);
 
 
 
@@ -87,13 +100,10 @@ function requestBegin(request, response) {
    request.addListener('end', function() {
       log.log("end from client received for: " + currentRequestID, 3);
       //if request is not a get then we need to hash the contents to differentiate between requests with the same URL
-      console.log(request.method);
       if(request.method != 'GET') {
          currentRequest.hash = mdSum.digest('hex');
-         currentRequestID = currentRequest.myRequest.url + currentRequest.hash;
-      }else {
-         currentRequestID = currentRequest.myRequest.url;
       }
+      currentRequestID = currentRequest.myRequest.url + currentRequest.hash;
       
       //returns null if in transparent mode or if unknown request in translucent mode.
       var parrotResponse = mode(currentRequest, currentRequestID, reqs);
@@ -184,32 +194,25 @@ function checkWhiteList(url) {
    return false;
 }
 
-log.log("running!", 0);
-
 
 exports.removeReq = function(request) {
-   reqs[request] = null;
+   delete reqs[request];
+   log.log("remove: " + request, 1);
 };
 
 exports.getReqs = function() {
    return reqs;
 };
 
-exports.getWhiteList = function() {
-   return whiteList;
+exports.toggleLock = function(request) {
+   reqs[request].lock = !reqs[request].lock;
+   log.log("lock: " + reqs[request].lock + " on: " + request, 1);
 };
 
-exports.removeWhiteList = function(siteToDelist) {
-   for(var i = 0; i < whiteList.length; i++) {
-      if(whiteList[i] == siteToDelist) {
-         whiteList = whiteList.slice(i, i+1);
-      }
-   }
-};
-
-
-exports.addWhiteList = function(siteToList) {
-   whiteList[whitList.length] = siteToList;
+exports.toggleIgnore = function(request) {
+   
+   reqs[request].ignore = !reqs[request].ignore;
+   log.log("ignore: " + reqs[request].ignore + " on: " + request, 1);
 };
 
 exports.getMode = function() {
@@ -227,3 +230,4 @@ exports.setMode = function(newMode) {
      mode = opaque.genResponse;
   }
 };
+
