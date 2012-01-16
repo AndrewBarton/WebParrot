@@ -1,7 +1,7 @@
 
 
 Readme for WebParrot
-
+Uses node.js v0.6.6 (http://nodejs.org/#download)
 Web parrot is designed to facilitate repeatable client side testing by emulating
  your server. It does so by listening to your http traffic then replaying 
  what it has heard.

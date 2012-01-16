@@ -65,10 +65,6 @@ app.post(apiPageUrl, function(req, res) {
       
 });
 
-exports.getWhiteList = function () {
-   return parrot.getWhiteList();
-};
-
 exports.getCachedReqsuests = function () {
    return parrot.getReqs();
 };
