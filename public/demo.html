@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+	 <script type="text/javascript">
+   window.onload = function(event) {
+      var date = new Date(Date.now());
+      document.getElementById('clientLoadTime').textContent = "Client time at load is: " +  date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+   }
+   </script>  
+</head>
+<body>
+<p>Server time at load is:%REPLACEME</p>
+<p id="clientLoadTime"></p>
+
+</body>
+</html>

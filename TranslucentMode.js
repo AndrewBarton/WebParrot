@@ -1,9 +1,15 @@
 var log = require('./parrotLogger');
    
-
+exports.name = 'translucent';
 
 exports.genResponse = function respo(request, ID, reqs) {
    response = Object.create(null);
+   
+   if(request.ignore) {
+      log.log("translucent Mode: ignored request received: " + ID, 2);
+      return null;
+   }
+   
    if(reqs[ID] != null) {
       
       if(reqs[ID].ignore) {

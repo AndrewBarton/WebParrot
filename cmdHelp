@@ -1,0 +1,15 @@
+
+usage: nodejs WebParrot.js [-p proxyPort][-w webPort][-d demoPort][-v verbosityLevel][-m starting mode]
+
+-p <proxyPort>: The port to send proxy traffic through. Default 8080
+-w <webPort>: The port to host the admin pages on. Default 8081
+-d <demoPort>: The port to host the demo pages on. Default disabled
+-v <0-4>: How many messages the parrot will log. Default 1
+         0, quiet mode, no messages
+         1, change mode, only changes via admin page will be logged.
+         2, page mode, page urls passed through proxy will be logged.
+         3, chatty mode, messages for each part of each message will be logged.
+-m <translucent|transparent|opaque>: The mode the parrot will start in. Default translucent
+         translucent: known messages will be parroted, unknown messages will contact the server.
+         transparent: no messages will be parroted, but they will be recorded.
+         opaque: all messages will be parroted, unknown messages will be returned blank.

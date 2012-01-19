@@ -11,6 +11,27 @@
 	    var blankIgnored = 'Ignored: ';
        var url = 'http://' + document.URL.split('/')[2] + '/api';
           
+       
+       window.onload = function() {
+	       var xmlhttp=new XMLHttpRequest();
+	       
+	       xmlhttp.onreadystatechange = function() {
+	          if(xmlhttp.readyState == 4) {
+	             if(xmlhttp.responseText == 'opaque') {
+	                document.getElementById('modeSelector').selectedIndex = 2;
+	             }else if (xmlhttp.responseText == 'transparent') {
+                   document.getElementById('modeSelector').selectedIndex = 1;
+                }else {
+                   document.getElementById('modeSelector').selectedIndex = 0;
+                }
+	          }
+	       }
+         
+          var getMode = {getMode:'dasdas'};
+          xmlhttp.open("POST", url, true);
+          xmlhttp.setRequestHeader('Content-Type', "application/json");
+          xmlhttp.send(JSON.stringify(getMode));
+       }
        //update the text shown on the right
        var displayOverview = function(event, ui) {
 	       var sele = document.getElementById('requestList').contentWindow.getSelected();
@@ -96,7 +117,12 @@
 	    }
     
 	    function onModeChange(){
-	       
+	       var xmlhttp=new XMLHttpRequest();
+          var selected = {mode:document.getElementById('modeSelector').value}
+          
+          xmlhttp.open("POST", url, true);
+          xmlhttp.setRequestHeader('Content-Type', "application/json");
+          xmlhttp.send(JSON.stringify(selected));
 	    }
     </script>
     <style type="text/css">
@@ -119,10 +145,10 @@
 	            <button type=button onclick="onRemove()">Remove Request</button>
 	            <button type=button onclick="onToggle('Ignore')">Toggle Ignore</button>
 	            <button type=button onclick="onToggle('Lock')">Toggle Lock</button>
-	            <select>
-	              <option>Translucent</option>
-	              <option>Transparent</option>
-	              <option>Opaque</option>
+	            <select id="modeSelector" onchange="onModeChange()">
+	              <option id="translucent">Translucent</option>
+	              <option id="transparent">Transparent</option>
+	              <option id=opaque>Opaque</option>
 	            </select>
             </th>
          </tr>
@@ -131,7 +157,7 @@
                <p id="urlText">URL:<a id=urlLink></a><br></p>
                <p id= "lockedText">Locked:<br></p>
                <p id= "ignoredText">Ignored:<br></p>
-		         <select>
+		         <select id="displayType" onchange="onDisplayChange()">
 		          <option>Response render</option>
 		          <option>Response source</option>
 		          <option>Request source</option>
