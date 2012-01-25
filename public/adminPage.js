@@ -19,8 +19,21 @@ app.get('/reqList', function(req, res) {
    for(req in reqs) {
       actualReq = reqs[req];
       propString += 'props["' + actualReq.myRequest.url + actualReq.hash + '"] = { url:"' + actualReq.myRequest.url + '", lock:';
-      propString += actualReq.lock + ', ignore: ' + actualReq.ignore + '};\n';
-      totalString += '<li class="ui-selectee" id= "' + actualReq.myRequest.url + actualReq.hash + '">' + actualReq.myRequest.url + "     " + actualReq.hash + '</li>\n';
+      propString += actualReq.lock + ', ignore:' + actualReq.ignore + ', etag:' + actualReq.headers.etag;
+      propString +=  ', cacheChecked:' + actualReq.cacheChecked  +  ', newCache:' + actualReq.newCache + '};\n';
+      totalString += '<li class="ui-selectee" id= "' + actualReq.myRequest.url + actualReq.hash;
+      
+      totalString += '">' + actualReq.myRequest.url + "     " + actualReq.hash;
+      if(actualReq.cacheChecked) {
+         if(actualReq.newCache) {
+            totalString += ' o';
+         }else {
+            totalString += ' *';
+         }
+      }else {
+         totalString += ' X';
+      }
+      totalString += '</li>\n';
    }
    totalString += '</ul> \n</body> \n</html>';
    totalString = totalString.replace('REPLACEME', propString);

@@ -37,6 +37,21 @@
      function bindMe(newF) {
         $("#selectable").bind('selectableselected', newF);
      }
+     
+     function cacheCheck(updates) {
+        var updateMe = document.getElementById(updates.cacheCheck);
+        var text = updateMe.textContent
+        text = text.slice(0, text.length-1);
+        if(updates.updated) {
+           text += 'o';
+        }else {
+           text += '*';
+        }
+        updateMe.textContent = text;
+     }
+     function cacheReplace(replaces) {
+        
+     }
   </script>
   <style type="text/css">
 #selectable .ui-selecting {

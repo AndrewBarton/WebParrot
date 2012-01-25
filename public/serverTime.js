@@ -9,7 +9,9 @@ if(app) {
    function onStarterRead(err, data) {
       demoPage = data;
    }
-
+   app.get('/', function(req, res) {
+      res.redirect('/demo');
+   });
    app.get('/demo', function(req, res) {
       
       var date = new Date(Date.now());

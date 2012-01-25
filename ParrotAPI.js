@@ -8,7 +8,6 @@ var log = require('./parrotLogger');
 var app = express.createServer();
 app.use(express.bodyParser());
 exports.app = app;
-console.log(parrot.demoPort);
 if(parrot.demoPort != 0) {
    var demoApp = express.createServer();
    exports.demoApp = demoApp;
@@ -36,6 +35,7 @@ app.get('/', function(req, res) {
    
 app.post(apiPageUrl, function(req, res) {
       var contents = req.body;
+      console.log(contents);
       if(contents.removeRequest) {
          for(var i = 0; i < contents.removeRequest.length; i++) {
             parrot.removeReq(contents.removeRequest[i]);
@@ -43,15 +43,17 @@ app.post(apiPageUrl, function(req, res) {
          res.send(JSON.stringify(req.body));
       }
       
-      if(contents.getResponseText) {
-         res.send(JSON.stringify(getCachedRequest(resText.ID).myRequest));
+      if(contents.requestSource) {
+         request = exports.getCachedRequest(contents.requestSource).myRequest;
+         var text = 'method: ' + request.method + '\n';
+         res.send(text + request.headers);
       }
       
-      if(contents.getRequestText) {
-         res.send(JSON.stringify(getCachedRequest(resText.ID).data));
+      if(contents.responseSource) {
+         res.send(JSON.stringify(exports.getCachedRequest(contents.requestSource).headers + exports.getCachedRequest(contents.requestSource).data));
       }
       if(contents.getResponseRender) {
-         res.send(getCachedRequest(resText.ID).data);
+         res.send(getCachedRequest(contents.requestSource).data);
       }
       
       if(contents.toggleIgnore) {
@@ -73,6 +75,21 @@ app.post(apiPageUrl, function(req, res) {
       }
       if(contents.getMode) {
          res.send(parrot.getMode());
+      }
+      if(contents.cacheCheck) {
+            parrot.cacheCheck(contents.cacheCheck, res, function(updated) {
+               if(updated) {
+                  req.body.updated = true;
+                  res.send(JSON.stringify(req.body));
+               }else {
+                  req.body.updated = false;
+                  res.send(JSON.stringify(req.body));
+               }
+               
+            });
+      }
+      if(contents.cacheReplace) {
+            parrot.cacheReplace(contents.cacheReplace, res);
       }
       
       

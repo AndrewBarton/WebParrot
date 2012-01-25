@@ -4,34 +4,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Hello HTML</title>
+    <title>Web Parrot admin page</title>
      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script type"text/javascript">
 	    var blankLocked = 'Locked: ';
 	    var blankIgnored = 'Ignored: ';
+	    var blankEtag = 'ETag: ';
        var url = 'http://' + document.URL.split('/')[2] + '/api';
           
-       
-       window.onload = function() {
-	       var xmlhttp=new XMLHttpRequest();
-	       
-	       xmlhttp.onreadystatechange = function() {
-	          if(xmlhttp.readyState == 4) {
-	             if(xmlhttp.responseText == 'opaque') {
-	                document.getElementById('modeSelector').selectedIndex = 2;
-	             }else if (xmlhttp.responseText == 'transparent') {
-                   document.getElementById('modeSelector').selectedIndex = 1;
-                }else {
-                   document.getElementById('modeSelector').selectedIndex = 0;
-                }
-	          }
-	       }
-         
-          var getMode = {getMode:'dasdas'};
-          xmlhttp.open("POST", url, true);
-          xmlhttp.setRequestHeader('Content-Type', "application/json");
-          xmlhttp.send(JSON.stringify(getMode));
-       }
        //update the text shown on the right
        var displayOverview = function(event, ui) {
 	       var sele = document.getElementById('requestList').contentWindow.getSelected();
@@ -43,9 +23,11 @@
 	          document.getElementById('urlLink').textContent = sele.url;
 	          document.getElementById('lockedText').textContent = blankLocked + sele.lock;
 	          document.getElementById('ignoredText').textContent = blankIgnored + sele.ignore;
+	          document.getElementById('etagText').textContent = blankEtag + sele.etag;
 	       }else {
 	          document.getElementById('urlLink').href = '';
 	          document.getElementById('urlLink').textContent = '';
+	          document.getElementById('etagText').textContent = blankEtag;
 	          document.getElementById('lockedText').textContent = blankLocked;
 	          document.getElementById('ignoredText').textContent = blankIgnored;
 	       }
@@ -54,69 +36,46 @@
         //on window load bind the function for displaying the overview to the list of selectables in list.
       window.addEventListener('load', function() {
          document.getElementById('requestList').contentWindow.bindMe(displayOverview)
+         
+         document.getElementById('requestList').contentWindow.bindMe(displayOverview);
+         var xmlhttp=new XMLHttpRequest();
+         
+         xmlhttp.onreadystatechange = function() {
+            if(xmlhttp.readyState == 4) {
+               if(xmlhttp.responseText == 'opaque') {
+                  document.getElementById('modeSelector').selectedIndex = 2;
+               }else if (xmlhttp.responseText == 'transparent') {
+                  document.getElementById('modeSelector').selectedIndex = 1;
+               }else {
+                  document.getElementById('modeSelector').selectedIndex = 0;
+               }
+            }
+         }
+        
+         var getMode = {getMode:'unknown'};
+         xmlhttp.open("POST", url, true);
+         xmlhttp.setRequestHeader('Content-Type', "application/json");
+         xmlhttp.send(JSON.stringify(getMode));
       }, false)
           
 	          
 	    function displayDetails() {
-	       
-	    }
-	         
-	    function onRemove(){
-	       var selected = Object.create(null);
-	       selected.removeRequest = document.getElementById('requestList').contentWindow.getSelectedIDs();
-	       for(var i = 1; i < selected.length; i++) {
-	          selected[i] = selected[i].id;
+	       var selected = document.getElementById('requestList').contentWindow.getSelectedIDs();
+	       if(selected.length == 1) {
+	           var renderMode = document.getElementById('displayType').value
+	           if(renderMode == 'responseRender') {
+	              var prop = document.getElementById('requestList').contentWindow.getSelected();
+	              document.getElementById('preview').src = prop[0].url;
+	           }else {
+	              sendRequestList(renderMode, onDisplayDetail);
+	           }
+	           
 	       }
-	      
-	      var xmlhttp=new XMLHttpRequest();
-	      xmlhttp.onreadystatechange = function() {
-	         if(xmlhttp.readyState == 4) {
-	            var removes = jQuery.parseJSON(xmlhttp.responseText);
-	            document.getElementById('requestList').contentWindow.removeSelectables(removes.removeRequest);
-	         }
-	      }
-	      
-	      xmlhttp.open("POST", url, true);
-	      xmlhttp.setRequestHeader('Content-Type', "application/json");
-	      xmlhttp.send(JSON.stringify(selected));
-	   }
-	    //used for both locking and ignoring, but all the brackets are kinda confusing...
-	    function onToggle(type){
-	       var lowerType = type.toLowerCase();
-	       var selected = Object.create(null);
-	       selected["toggle" + type] = document.getElementById('requestList').contentWindow.getSelectedIDs();
-	       for(var i = 1; i < selected.length; i++) {
-	          selected[i] = selected[i].id;
-	       }
-	       
-	       var xmlhttp=new XMLHttpRequest();
-	       //when we get the response it will contain the urls to toggle, so we toggle them then.
-	       //we could toggle them from the button press, but if the request is lost then the server
-	       //and client will be desynced.
-	       xmlhttp.onreadystatechange = function() {
-	          if(xmlhttp.readyState == 4) {
-	             var toggles = jQuery.parseJSON(xmlhttp.responseText)["toggle" + type];
-	             var props = document.getElementById('requestList').contentWindow.props;
-	             for(var j = 0; j < toggles.length; j++) {
-	                
-	                var prop = props[toggles[j]];
-	                //toggle the prop we want by looking at props[url] where url at position j in toggles
-	                //then get the attribute we want to toggle is lowertype (either ignore or lock)
-	                props[toggles[j]][lowerType] = !props[toggles[j]][lowerType]
-	                //cause the overview text to update
-	                displayOverview(null, null);
-	             }
-	             
-	          }
-	       }
-	      
-	       
-	       xmlhttp.open("POST", url, true);
-	       xmlhttp.setRequestHeader('Content-Type', "application/json");
-	       xmlhttp.send(JSON.stringify(selected));
 	    }
     
-	    function onModeChange(){
+	    
+	    
+	    function onModeChange() {
 	       var xmlhttp=new XMLHttpRequest();
           var selected = {mode:document.getElementById('modeSelector').value}
           
@@ -124,6 +83,107 @@
           xmlhttp.setRequestHeader('Content-Type', "application/json");
           xmlhttp.send(JSON.stringify(selected));
 	    }
+	    
+	    function sendPost(content, onReturn) {
+	       var xmlhttp=new XMLHttpRequest();
+          xmlhttp.onreadystatechange = function () {
+             onReturn(xmlhttp);
+          }
+         
+          xmlhttp.open("POST", url, true);
+          xmlhttp.setRequestHeader('Content-Type', "application/json");
+          xmlhttp.send(JSON.stringify(content));
+	    }
+	    
+	    function sendRequestList(command, onReturn, manyRequest) {
+	       manyRequest = (typeof manyRequest == 'undefined')? false:manyRequest
+	       var selected = Object.create(null);
+          selected[command] = document.getElementById('requestList').contentWindow.getSelectedIDs();
+          if(manyRequest) {
+             for(var i = 0; i < selected[command].length; i++) {
+                var sendMe = Object.create(null);
+                sendMe[command] = selected[command][i];
+                sendPost(sendMe, onReturn);
+             }
+          }else {
+            sendPost(selected, onReturn);
+          }
+         
+	    }
+	    /*
+	     * All of the functions that can be called on the POST return of sendRequestList
+	     */
+	    
+	    function onCacheReplace(xmlhttp) {
+	       if(xmlhttp.readyState == 4) {
+             var replaces = jQuery.parseJSON(xmlhttp.responseText);
+             if(replaces) {
+                document.getElementById('requestList').contentWindow.replaceCache(replaces);
+             }
+          }
+	    }
+	    
+	    function onCacheUpdate(xmlhttp) {
+          if(xmlhttp.readyState == 4) {
+             var replaces = jQuery.parseJSON(xmlhttp.responseText);
+             if(replaces) {
+                document.getElementById('requestList').contentWindow.cacheCheck(replaces);
+             }
+             
+          }
+       }
+	    
+	    function onRemove(xmlhttp) {
+          if(xmlhttp.readyState == 4) {
+             var removes = jQuery.parseJSON(xmlhttp.responseText);
+             document.getElementById('requestList').contentWindow.removeSelectables(removes.removeRequest);
+          }
+       }
+	    
+	    function onIgnore(xmlhttp) {
+          if(xmlhttp.readyState == 4) {
+             var toggles = jQuery.parseJSON(xmlhttp.responseText)['toggleIgnore'];
+             var props = document.getElementById('requestList').contentWindow.props;
+             for(var j = 0; j < toggles.length; j++) {
+                
+                var prop = props[toggles[j]];
+                //toggle the prop we want by looking at props[url] where url at position j in toggles
+                //then get the attribute we want to toggle is ignore
+                props[toggles[j]]['ignore'] = !props[toggles[j]]['ignore']
+                //cause the overview text to update
+                displayOverview(null, null);
+             }
+             
+          }
+       }
+       
+       function onLock(xmlhttp) {
+          if(xmlhttp.readyState == 4) {
+             var toggles = jQuery.parseJSON(xmlhttp.responseText)['toggleLock'];
+             var props = document.getElementById('requestList').contentWindow.props;
+             for(var j = 0; j < toggles.length; j++) {
+                
+                var prop = props[toggles[j]];
+                //toggle the prop we want by looking at props[url] where url at position j in toggles
+                //then get the attribute we want to toggle is lock
+                props[toggles[j]]['lock'] = !props[toggles[j]]['lock']
+                //cause the overview text to update
+                displayOverview(null, null);
+             }
+             
+          }
+       }
+       
+       function onDisplayDetail(xmlhttp) {
+          if(xmlhttp.readyState == 4) {
+               var content = '<html><body>' + xmlhttp.responseText + '</body></html>';
+               var doc = document.getElementById('preview').contentWindow.document;
+               doc.open();
+               //doc.write(content);
+               doc.close();
+             
+          }
+       }
     </script>
     <style type="text/css">
       html, body {height:95%;}
@@ -135,16 +195,18 @@
   <table width=100% height=100% id=mainTable>
   <tr id="row1">
       <th width=50% height=100% id="column1">
+         <button type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)">Check Cache</button>
+         <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)">Replace Cache</button>
          <iframe src="./reqList" id="requestList" width=100% height=100% scrolling=auto></iframe>
       </th>
       <th>
       <form name="theForm">
          <table height=100%>
          <tr>
-            <th>
-	            <button type=button onclick="onRemove()">Remove Request</button>
-	            <button type=button onclick="onToggle('Ignore')">Toggle Ignore</button>
-	            <button type=button onclick="onToggle('Lock')">Toggle Lock</button>
+            <th align="left">
+	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
+	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
+	            <button type=button onclick="sendRequestList('toggleIgnore', onLock)">Toggle Lock</button>
 	            <select id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
@@ -155,14 +217,15 @@
          <tr>
             <th>
                <p id="urlText">URL:<a id=urlLink></a><br></p>
+               <p id="etagText">ETag:<br></p>
                <p id= "lockedText">Locked:<br></p>
                <p id= "ignoredText">Ignored:<br></p>
-		         <select id="displayType" onchange="onDisplayChange()">
-		          <option>Response render</option>
-		          <option>Response source</option>
-		          <option>Request source</option>
+		         <select id="displayType">
+		          <option value="responseRender">Response render</option>
+		          <option value="responseSource">Response source</option>
+		          <option value="requestSource">Request source</option>
 		         </select>
-		         <button type=button>Display</button>
+		         <button type=button onclick="displayDetails()">Display</button>
 	          </th>
          </tr>
          <tr height=100%>

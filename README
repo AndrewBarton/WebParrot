@@ -13,7 +13,7 @@ The first time I do so the parrot acts like a normal proxy and just relays
 
 To run WebParrot use node.js to run WebParrot.js
 "node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port]
- [-w webPort]"
+ [-w webPort] [-d demoPort] [-h]"
 Next set your browser to use your machine as a proxy. By default WebParrot
 uses port 8080. By default the admin pages use port 8081
 Be sure to clear your browser's cache before using (see cache issues below).
@@ -28,19 +28,41 @@ translucent: In this mode any unknown request will be sent to the server while a
 transparent: In this mode all requests are sent to the server and the parrot acts 
   like a normal proxy, however all responses will be recorded.
 opaque: In this mode no requests will be sent to the server, any unknown requests
-  will receive a 404. Do not start the parrot in opaque mode.
+  will receive a blank page. Do not start the parrot in opaque mode.
 
 
 
-WebParrot has three logging levels (verbosity):
+Verbosity:
 0 is quiet mode, no messages except that it started correctly.
 1 is changes mode, only changes to the settings (done via the admin page) will be logged.
 2 is requests mode, only messages about known and unknown requests will be logged. (implies 1)
 3 is all mode, logs a message for every piece of every request and response received.
 
+Proxy port: WebParrot can run the proxy on any port, to specify a port use the -p 
+ argument
 
+Web port: WebParrot also uses a webPort, however it needn't be changed unless 
+ another application is using port 8081. If so, change the webPort using the
+ -w argument.
+ 
+Demopage: If a demo port is specified then WebParrot will launch another http 
+ server with the demo page on the demo port. This page illustrates how WebParrot
+ works. Just go to <proxy URL>:<demoPort>.
+ 
+Help: The -h argument shows help about the other arguments.
 
-Cache issues:
+Admin page:
+WebParrot also launches a http server in addition to the proxy server. This server
+ can be reached at <proxy URL>:<proxyPort> or at <proxy URL>:<webPort>. This is most
+ likely localhost:8080 or localhost:8081. Note that all traffic on the proxy port or
+ the web port will be ignored by the parrot.
+
+Request hashing:
+ In order to differentiate requests with the same URL but a different body all 
+ request bodies are hashed using MD5. This hash will appear at the end of the
+ entry in the list and is 0 for all gets.
+
+Local Cache issues:
 If you are trying to view a page you have viewed before your browser may send 
  a cache check instead of a normal GET. If the page has no changed then the 
  server will response by saying that the cached page is correct. This response
@@ -58,13 +80,38 @@ Requests can be set to be locked and/or ignored. Locking a request makes it so
  mode the server will always receive the request and in opaque mode a 404 will
  always be delivered (thus locking only makes sense in translucent mode).
 
+Refreshing server Cache:
+WebParrot can check if there is an update to the cache and update the cache
+ without having you reload the page in your browser. Select a url from the list
+ and click either the 'Check Cache' or 'Replace Cache' buttons. An entry in the 
+ list ending with a 'X' has unknown cache status. An entry in the list ending 
+ with a 'o' has an update and an entry in the list ending with a '*' has no 
+ update. 
+ 
+ Note that at this time the cache only uses the ETag part of the http
+ header to determine if there is an update or not. I intend to add a strong
+ validation that checks byte by byte.
+ 
+ Also note that the cache refreshing only works for 'GET' requests, it will ignore
+ any other methods.
+
+Preview:
+You can preview a cached page by selecting its entry in the list and pressing
+'Display'. At this time only rendering the response works however I intend to
+allow viewing the source of the response and the headers of the request.
 
 
-Admin page:
+Custom Admin pages:
 WebParrot also launches a http server in addition to the proxy server. By default
  this serves '/admin.html'. This server will deliver any pages in the /public/
   folder. These pages are used to control WebParrot via the parrot API.
   See API.txt for more information about the API.
+  
+WebParrot's web port is a little different. The admin pages can be reached via the
+ proxy port, however the parrot uses the web port internally to route your requests
+ to the web server. As a result of this the web server can be reached at either 
+ the web port or the proxy port. You do not have to change the web port unless
+ another program is using port 8081.
 
 
 Copyright Andrew Barton andrewbbarton@gmail.com,  2012

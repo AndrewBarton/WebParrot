@@ -87,9 +87,16 @@ function requestBegin(request, response) {
    var currentRequest = { myRequest : request,
          reqData: [],
          data: [],
+         id : '',
          ignore : false,
          lock : false,
-         hash: 0};
+         hash: 0,
+         newData:[],
+         newHeaders:null,
+         headers:null,
+         statusCode:null,
+         newCache:false,
+         cacheChecked:false};
    var currentRequestID = '';
    var mdSum = crypto.createHash('md5');
    
@@ -113,11 +120,8 @@ function requestBegin(request, response) {
       currentRequestID = currentRequest.myRequest.url + currentRequest.hash;
       log.log('end from client received for: ' + currentRequestID, 3);
       
-      var portToUse = 80;
-      if(request.headers.host.indexOf(':') != -1) {
-         portToUse = request.headers.host.slice(request.headers.host.indexOf(':')+1);
-      }
-      if(portToUse == exports.webPort) {
+      var portToUse = getPort(request.headers.host);
+      if(portToUse == exports.webPort || portToUse == proxyPort) {
          noParrot(request, response, currentRequest, portToUse);
          return;
       }
@@ -129,8 +133,7 @@ function requestBegin(request, response) {
       
       //if there is not a parrot response
       if(!parrotResponse) {
-         var pathToUse = request.url.slice(7);
-         pathToUse = pathToUse.slice(pathToUse.search('/'));
+         var pathToUse = getPath(request.url);
          
          var options = {headers:request.headers,
                         hostname:request.headers.host.replace(new RegExp(':.*'), ''),
@@ -188,10 +191,8 @@ function requestBegin(request, response) {
             
          //if there is no record, or if there is a record and it is not locked
          if(!reqs[currentRequestID] || !reqs[currentRequestID].lock) {
-            //if the url is on the white list
-            //if(checkWhiteList(currentRequest.myRequest.url)) {
-               reqs[currentRequestID] = currentRequest;
-            //}
+            currentRequest.id = currentRequestID;
+            reqs[currentRequestID] = currentRequest;
          }
          for(var j = 0; j < currentRequest.reqData.length; j++) {
             proxyRequest.write(currentRequest.reqData[j], 'binary');
@@ -200,6 +201,10 @@ function requestBegin(request, response) {
          
          
       }else {
+         if(!parrotResponse.statusCode) {
+            parrotResponse.statusCode = 502;
+            log.log('tried to parrot a response without a statusCode: ' + parrotResponse.myRequest.url, 2);
+         }
          response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
          if(parrotResponse.body) {
             for(var j = 0; j < parrotResponse.body.length; j++) {
@@ -216,13 +221,17 @@ function requestBegin(request, response) {
 }
 
 function noParrot(request, response, currentRequest, portToUse) {
-   log.log('Request received on web port: ' + request.headers.host, 2);
-   var pathToUse = request.url.slice(7);
-   pathToUse = pathToUse.slice(pathToUse.search('/'));
+   if(portToUse == exports.webPort) {
+      log.log('Request received on web port: ' + request.headers.host, 2);
+   }else {
+      log.log('Request received on proxy port: ' + request.headers.host, 2);
+      portToUse = exports.webPort;
+   }
+   var pathToUse = getPath(request.url);
    
    var options = {headers:request.headers,
                   hostname:request.headers.host.replace(new RegExp(':.*'), ''),
-                  port:8081,
+                  port:portToUse,
                   path:pathToUse,
                   method:request.method
                   };
@@ -258,6 +267,96 @@ function noParrot(request, response, currentRequest, portToUse) {
    proxyRequest.end();
 }
 
+exports.cacheCheck = function(request, response, callback) {
+   log.log('Cache check for: ' + request, 1);
+   request = reqs[request];
+   var pathToUse = getPath(request.myRequest.url);
+   var portToUse = getPort(request.myRequest.headers.host);
+   var requestHeaders = request.myRequest.headers;
+   if(request.myRequest.method.toLowerCase() != 'get') {
+      return;
+   }
+   if(request.headers.etag) {
+      requestHeaders['If-None-Match'] = request.headers.etag;
+   }
+   var options = {headers:requestHeaders,
+                  hostname:request.myRequest.headers.host.replace(new RegExp(':.*'), ''),
+                  port:portToUse,
+                  path:pathToUse
+                  };
+   var proxyRequest = http.request(options);
+   
+   //add the listener for the response from the server
+   proxyRequest.addListener('response', function(proxyResponse) {
+      request.cacheCheck = true;
+      log.log('cache check response from server received', 3);
+      if(proxyResponse.statusCode !='304') {
+         request.newCache = true;
+         request.newHeaders = proxyResponse.headers;
+         request.newData = [];
+         
+         //add the listener for the data of the http response
+         proxyResponse.addListener('data', function(chunk) {
+            request.newData[request.newData.length] = chunk;
+         });
+         proxyResponse.addListener('end', function() {
+            callback(true);
+         });
+      }else {
+         request.newCache = false;
+         callback(false);
+      }
+     
+   });
+   proxyRequest.end();
+};
+
+exports.cacheReplace = function(request, response) {
+   log.log('replace cache for: ' + reqs[request].id, 1);
+   //if we do not know that there is a new page
+   if(!reqs[request].cacheChecked) {
+      
+      exports.cacheCheck(request, response, function(updated) {
+         //if there was a new page, set it in and respond to the client to update itself.
+         var sendMe = {cacheReplace:request.id, updated:true};
+         if(updated) {
+            request = reqs[request];
+            request.headers = request.newHeaders;
+            request.newHeaders = null;
+            request.data = request.newData;
+            request.newData = [];
+            request.newCache = false;
+            request.cacheCheck = false;
+            
+         }else {
+            sendMe.updated = false;
+         }
+
+         response.send(JSON.stringify(sendMe));
+         
+      });
+   }else {
+      //we know that it has been checked if there is a new page
+      request = reqs[request];
+      //if there is a new page
+      if(request.newCache) {
+         
+         request.headers = request.newHeaders;
+         request.newHeaders = null;
+         request.data = request.newData;
+         request.newData = [];
+         request.newCache = false;
+         request.cacheCheck = false;
+         var sendMe = {cacheReplace:request.id};
+         response.send(JSON.stringify(sendMe));
+      }else {
+         //no new page, no part of the client needs to know
+         response.send('');
+      }
+     
+   }
+   
+};
 exports.removeReq = function(request) {
    delete reqs[request];
    log.log('remove: ' + request, 1);
@@ -279,12 +378,10 @@ exports.toggleIgnore = function(request) {
 };
 
 exports.getMode = function() {
-   console.log('current mode is: ' + mode.name);
    return mode.name;
 };
 
 exports.setMode = function(newMode) {
-   console.log('new mode is:' + newMode);
   if(newMode.toLowerCase() == 'translucent') {
      mode = translucent;
   }
@@ -296,3 +393,16 @@ exports.setMode = function(newMode) {
   }
 };
 
+function getPath(url) {
+   var pathToUse = url.slice(7);
+   pathToUse = pathToUse.slice(pathToUse.search('/'));
+   return pathToUse;
+}
+
+function getPort(host) {
+   var portToUse = 80;
+   if(host.indexOf(':') != -1) {
+      portToUse = host.slice(host.indexOf(':')+1);
+   }
+   return portToUse;
+}
