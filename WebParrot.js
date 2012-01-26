@@ -3,6 +3,7 @@
 
 
 var http = require('http');
+var express = require('express');
 var translucent = require('./TranslucentMode');
 var transparent = require('./TransparentMode');
 var opaque = require('./OpaqueMode');
@@ -12,12 +13,11 @@ var log = require('./parrotLogger');
 
 
 
-var proxyPort = 8080;
-exports.webPort = 8081;
-exports.demoPort = 0;
+var proxyPort = 9090;
+
 var reqs = Object.create(null);
-var whiteList = [];
 var mode = translucent;
+var strip = false;
 
 
 function parseArgs() {
@@ -58,11 +58,14 @@ function parseArgs() {
             exports.demoPort = args[i];
          }
       }
-      if(args[i] == '-h') {
+      if(args[i] == '-h' || args[i] == '?') {
          var fs = require('fs');
          
          console.log(fs.readFileSync('./cmdHelp', 'utf-8'));
          process.exit(0);
+      }
+      if(args[i] == '-strip') {
+         strip = true;
       }
    }
 }
@@ -71,8 +74,10 @@ function parseArgs() {
 
 
 parseArgs();
-var api = require('./ParrotAPI');
-http.createServer(requestBegin).listen(proxyPort);
+
+var app = express.createServer();
+exports.app = app;
+exports.proxyPort = proxyPort;
 log.log('Proxy running on port: ' + proxyPort, 0);
 
 
@@ -82,8 +87,11 @@ log.log('Proxy running on port: ' + proxyPort, 0);
  * @param request
  * @param response
  */
-function requestBegin(request, response) {
+function requestBegin(request, response, next) {
    log.log('request received', 3);
+   
+   //I'M A HACK, REMOVE ME!!!
+   request.url = request.url.slice(1);
    var currentRequest = { myRequest : request,
          reqData: [],
          data: [],
@@ -95,10 +103,30 @@ function requestBegin(request, response) {
          newHeaders:null,
          headers:null,
          statusCode:null,
+         etag:null,
+         expires:null,
          newCache:false,
          cacheChecked:false};
    var currentRequestID = '';
    var mdSum = crypto.createHash('md5');
+   
+   if(strip) {
+      delete currentRequest.myRequest.headers['if-none-satch'];
+      delete currentRequest.myRequest.headers['if-modified-since'];
+   }
+   var portToUse = getPort(request.headers.host);
+   var pathToUse = getPath(request.url);
+   if(portToUse == proxyPort) {
+      if(!pathToUse.match('demo')) {
+         
+         next();
+         return;
+      }else {
+         response.redirect('/FUBAR');
+         return;
+      }
+      
+   }
    
  //when the data part of the request is received, write out the data part of the 
    //request to the server
@@ -120,11 +148,7 @@ function requestBegin(request, response) {
       currentRequestID = currentRequest.myRequest.url + currentRequest.hash;
       log.log('end from client received for: ' + currentRequestID, 3);
       
-      var portToUse = getPort(request.headers.host);
-      if(portToUse == exports.webPort || portToUse == proxyPort) {
-         noParrot(request, response, currentRequest, portToUse);
-         return;
-      }
+      
 
       //returns null if in transparent mode or if unknown request in translucent mode.
       var parrotResponse = mode.genResponse(currentRequest, currentRequestID, reqs);
@@ -133,7 +157,7 @@ function requestBegin(request, response) {
       
       //if there is not a parrot response
       if(!parrotResponse) {
-         var pathToUse = getPath(request.url);
+         
          
          var options = {headers:request.headers,
                         hostname:request.headers.host.replace(new RegExp(':.*'), ''),
@@ -219,7 +243,7 @@ function requestBegin(request, response) {
    });
 
 }
-
+/*
 function noParrot(request, response, currentRequest, portToUse) {
    if(portToUse == exports.webPort) {
       log.log('Request received on web port: ' + request.headers.host, 2);
@@ -228,7 +252,6 @@ function noParrot(request, response, currentRequest, portToUse) {
       portToUse = exports.webPort;
    }
    var pathToUse = getPath(request.url);
-   
    var options = {headers:request.headers,
                   hostname:request.headers.host.replace(new RegExp(':.*'), ''),
                   port:portToUse,
@@ -237,7 +260,9 @@ function noParrot(request, response, currentRequest, portToUse) {
                   };
    
  //make the request to send to the server
+   log.log('creating request for non-parrot', 3);
    var proxyRequest = http.request(options);
+   log.log('created request for non-parrot', 3);
    if(currentRequest.reqData) {
       for(var i = 0; i < currentRequest.reqData.length; i++) {
          proxyRequest.write(currentRequest.reqData[i]);
@@ -248,12 +273,12 @@ function noParrot(request, response, currentRequest, portToUse) {
    
    //add the listener for the response from the server
    proxyRequest.addListener('response', function(proxyResponse) {
-      log.log('response from server received: ', 3);
+      log.log('response from server received on special port: ', 3);
       
       //add the listener for the data of the http response
       proxyResponse.addListener('data', function(chunk) {
          
-         log.log('data from server received', 3);
+         log.log('data from server received on special port: ', 3);
          response.write(chunk, 'binary');
       });
       
@@ -262,10 +287,13 @@ function noParrot(request, response, currentRequest, portToUse) {
       proxyResponse.addListener('end', function() {
            response.end();
       });
+      log.log('writing head of non-parroted proxy stuff', 3);
       response.writeHead(proxyResponse.statusCode, proxyResponse.headers);
    });
+   log.log('ending request for non-parrot', 3);
    proxyRequest.end();
-}
+   log.log('ended request for non-parrot', 3);
+}*/
 
 exports.cacheCheck = function(request, response, callback) {
    log.log('Cache check for: ' + request, 1);
@@ -278,6 +306,9 @@ exports.cacheCheck = function(request, response, callback) {
    }
    if(request.headers.etag) {
       requestHeaders['If-None-Match'] = request.headers.etag;
+   }
+   if(request.headers.expires) {
+      requestHeaders['If-Modified-Since'] = request.headers.expires;
    }
    var options = {headers:requestHeaders,
                   hostname:request.myRequest.headers.host.replace(new RegExp(':.*'), ''),
@@ -391,6 +422,7 @@ exports.setMode = function(newMode) {
   if(newMode.toLowerCase() == 'opaque') {
      mode = opaque;
   }
+  log.log('mode set to: ' + newMode, 1);
 };
 
 function getPath(url) {
@@ -406,3 +438,7 @@ function getPort(host) {
    }
    return portToUse;
 }
+app.use(express.bodyParser());
+app.all('*', requestBegin);
+var api = require('./ParrotAPI');
+app.listen(proxyPort);

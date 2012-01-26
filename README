@@ -12,10 +12,10 @@ The first time I do so the parrot acts like a normal proxy and just relays
  the server, reading the request and sending the response it heard earlier.
 
 To run WebParrot use node.js to run WebParrot.js
-"node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port]
- [-w webPort] [-d demoPort] [-h]"
+"node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port] [-h] 
+ [-strip]"
 Next set your browser to use your machine as a proxy. By default WebParrot
-uses port 8080. By default the admin pages use port 8081
+uses port 9090.
 Be sure to clear your browser's cache before using (see cache issues below).
 
 
@@ -40,22 +40,22 @@ Verbosity:
 
 Proxy port: WebParrot can run the proxy on any port, to specify a port use the -p 
  argument
-
-Web port: WebParrot also uses a webPort, however it needn't be changed unless 
- another application is using port 8081. If so, change the webPort using the
- -w argument.
- 
-Demopage: If a demo port is specified then WebParrot will launch another http 
- server with the demo page on the demo port. This page illustrates how WebParrot
- works. Just go to <proxy URL>:<demoPort>.
  
 Help: The -h argument shows help about the other arguments.
 
+Stripping: The -strip argument will remove all 'if-none-match' and 'if-modified-since' headers
+ from all requests through the parrot. This means that the server will never respond with a
+ status code '304 not modified' and effectively solves all issues related to the local cache.
+
 Admin page:
 WebParrot also launches a http server in addition to the proxy server. This server
- can be reached at <proxy URL>:<proxyPort> or at <proxy URL>:<webPort>. This is most
- likely localhost:8080 or localhost:8081. Note that all traffic on the proxy port or
- the web port will be ignored by the parrot.
+ can be reached at <proxy URL>:<proxyPort>. This is by default localhost:9090. 
+ Note that all traffic to the proxy port will be ignored by the parrot.
+
+Demo page: 
+ WebParrot hosts a page for testing and demonstration. This page is hosted at 
+ <proxy URL:<proxy Port>/demo. Note that the demo is a special case which will 
+ be cached and parroted unlike other traffic to the proxy port.
 
 Request hashing:
  In order to differentiate requests with the same URL but a different body all 
@@ -67,9 +67,10 @@ If you are trying to view a page you have viewed before your browser may send
  a cache check instead of a normal GET. If the page has no changed then the 
  server will response by saying that the cached page is correct. This response
  will be recorded by the parrot. Thus you may try to reload from the parrot
- only to get a cache response. To avoid this issue either clear your browser's
- cache before using or set the parrot to ignore that particular request
- (via the admin page).
+ only to get a '304 not modified'. There are three ways to avoid this issue:
+   1. Clear local cache before using
+   2. Tell the parrot to ignore the request.
+   3. Strip the headers of the requests using the -strip argument (see stripping above)
 
 
 Locking and ignoring:
@@ -81,37 +82,36 @@ Requests can be set to be locked and/or ignored. Locking a request makes it so
  always be delivered (thus locking only makes sense in translucent mode).
 
 Refreshing server Cache:
-WebParrot can check if there is an update to the cache and update the cache
+ WebParrot can check if there is an update to the cache and update the cache
  without having you reload the page in your browser. Select a url from the list
  and click either the 'Check Cache' or 'Replace Cache' buttons. An entry in the 
  list ending with a 'X' has unknown cache status. An entry in the list ending 
  with a 'o' has an update and an entry in the list ending with a '*' has no 
  update. 
  
- Note that at this time the cache only uses the ETag part of the http
- header to determine if there is an update or not. I intend to add a strong
- validation that checks byte by byte.
+    Note that at this time the cache only uses the ETag part of the http
+    header to determine if there is an update or not. I intend to add a strong
+    validation that checks byte by byte.
  
- Also note that the cache refreshing only works for 'GET' requests, it will ignore
- any other methods.
+    Also note that the cache refreshing only works for 'GET' requests, it will ignore
+    any other methods.
 
 Preview:
-You can preview a cached page by selecting its entry in the list and pressing
-'Display'. At this time only rendering the response works however I intend to
-allow viewing the source of the response and the headers of the request.
+   You can preview a cached page by selecting its entry in the list and pressing
+   'Display'. At this time only rendering the response works however I intend to
+   allow viewing the source of the response and the headers of the request.
 
 
 Custom Admin pages:
 WebParrot also launches a http server in addition to the proxy server. By default
- this serves '/admin.html'. This server will deliver any pages in the /public/
-  folder. These pages are used to control WebParrot via the parrot API.
-  See API.txt for more information about the API.
-  
-WebParrot's web port is a little different. The admin pages can be reached via the
- proxy port, however the parrot uses the web port internally to route your requests
- to the web server. As a result of this the web server can be reached at either 
- the web port or the proxy port. You do not have to change the web port unless
- another program is using port 8081.
+ this serves '/admin'. However it will load any javascript files in index.js in 
+ the public folder via nodejs's require. To add your own admin page do the following.
+ 1. Add a new js file to the public folder.
+ 2. Add this js file to index.js.
+ 3. In your js file 'require(../ParrotAPI)'.
+ 4. From ParrotAPI get app, which is an express web server.
+ 5. Add your page using 'app.get('page', callback). Where callback is a function
+   that will deliver the page.
 
 
 Copyright Andrew Barton andrewbbarton@gmail.com,  2012

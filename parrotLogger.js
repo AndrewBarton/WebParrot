@@ -8,5 +8,5 @@ exports.log = function(message, level) {
 
 //0 is quiet mode
 //1 is only messages about changes via API
-//2 is only messages about whole requests/responses
+//2 is messages about whole requests/responses
 //3 is messages about the parts of each request/response

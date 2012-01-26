@@ -5,25 +5,16 @@ var parrot = require('./WebParrot');
 var express = require('express');
 var log = require('./parrotLogger');
 
-var app = express.createServer();
-app.use(express.bodyParser());
+var app = parrot.app;
+
 exports.app = app;
-if(parrot.demoPort != 0) {
-   var demoApp = express.createServer();
-   exports.demoApp = demoApp;
 
-   log.log('demo running on port: ' + parrot.demoPort, 0);
-   demoApp.listen(parrot.demoPort);
-}
+var apiPageUrl = "*api*";
 
-var apiPageUrl = "/api";
 
-app.use(express.static(__dirname + '/public'));
 app.get('/', function(req, res) {
-  res.redirect('/admin.html'); 
+  res.redirect('/admin'); 
 });
-
-
 
 //possible actions =
    //remove request
@@ -35,7 +26,6 @@ app.get('/', function(req, res) {
    
 app.post(apiPageUrl, function(req, res) {
       var contents = req.body;
-      console.log(contents);
       if(contents.removeRequest) {
          for(var i = 0; i < contents.removeRequest.length; i++) {
             parrot.removeReq(contents.removeRequest[i]);
@@ -50,7 +40,7 @@ app.post(apiPageUrl, function(req, res) {
       }
       
       if(contents.responseSource) {
-         res.send(JSON.stringify(exports.getCachedRequest(contents.requestSource).headers + exports.getCachedRequest(contents.requestSource).data));
+         res.send(JSON.stringify(exports.getCachedRequest(contents.responseSource).headers) + JSON.stringify(exports.getCachedRequest(contents.responseSource).data));
       }
       if(contents.getResponseRender) {
          res.send(getCachedRequest(contents.requestSource).data);
@@ -107,5 +97,3 @@ exports.getMode =  function () {
    return parrot.getMode();
 };
 require('./public/');
-log.log("Web server running on port: " + parrot.webPort, 0);
-app.listen(parrot.webPort);

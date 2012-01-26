@@ -206,7 +206,7 @@
             <th align="left">
 	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
 	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
-	            <button type=button onclick="sendRequestList('toggleIgnore', onLock)">Toggle Lock</button>
+	            <button type=button onclick="sendRequestList('toggleLock', onLock)">Toggle Lock</button>
 	            <select id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
@@ -217,9 +217,11 @@
          <tr>
             <th>
                <p id="urlText">URL:<a id=urlLink></a><br></p>
+               <p id="statusCodeText">Status code:<br></p>
                <p id="etagText">ETag:<br></p>
-               <p id= "lockedText">Locked:<br></p>
-               <p id= "ignoredText">Ignored:<br></p>
+               <p id="expiresText">Expires:<br></p>
+               <p id="lockedText">Locked:<br></p>
+               <p id="ignoredText">Ignored:<br></p>
 		         <select id="displayType">
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>
