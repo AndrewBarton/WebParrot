@@ -10,7 +10,9 @@
 	    var blankLocked = 'Locked: ';
 	    var blankIgnored = 'Ignored: ';
 	    var blankEtag = 'ETag: ';
-       var url = 'http://' + document.URL.split('/')[2] + '/api';
+	    var blankStatus = 'Status code: ';
+	    var blankExpires = 'Expires:';
+	    var url = 'http://' + document.URL.split('/')[2] + '/api';
           
        //update the text shown on the right
        var displayOverview = function(event, ui) {
@@ -21,12 +23,16 @@
 	          sele = sele[0];
 	          document.getElementById('urlLink').href = sele.url;
 	          document.getElementById('urlLink').textContent = sele.url;
+	          document.getElementById('statusCodeText').textContent = blankStatus + sele.status;
+	          document.getElementById('expiresText').textContent = blankExpires + sele.expires;
 	          document.getElementById('lockedText').textContent = blankLocked + sele.lock;
 	          document.getElementById('ignoredText').textContent = blankIgnored + sele.ignore;
 	          document.getElementById('etagText').textContent = blankEtag + sele.etag;
 	       }else {
 	          document.getElementById('urlLink').href = '';
 	          document.getElementById('urlLink').textContent = '';
+	          document.getElementById('statusCodeText').textContent = blankStatus;
+	          document.getElementById('expiresText').textContent = blankExpires;
 	          document.getElementById('etagText').textContent = blankEtag;
 	          document.getElementById('lockedText').textContent = blankLocked;
 	          document.getElementById('ignoredText').textContent = blankIgnored;
@@ -67,6 +73,11 @@
 	              var prop = document.getElementById('requestList').contentWindow.getSelected();
 	              document.getElementById('preview').src = prop[0].url;
 	           }else {
+	              
+	              if(document.getElementById('preview').src.indexOf('parrotPreview.html') == -1) {
+	                 document.getElementById('preview').src = './parrotPreview.html';
+	              }
+	              
 	              sendRequestList(renderMode, onDisplayDetail);
 	           }
 	           
@@ -96,7 +107,7 @@
 	    }
 	    
 	    function sendRequestList(command, onReturn, manyRequest) {
-	       manyRequest = (typeof manyRequest == 'undefined')? false:manyRequest
+	       manyRequest = (typeof manyRequest == 'undefined')? false:manyRequest;
 	       var selected = Object.create(null);
           selected[command] = document.getElementById('requestList').contentWindow.getSelectedIDs();
           if(manyRequest) {
@@ -176,12 +187,8 @@
        
        function onDisplayDetail(xmlhttp) {
           if(xmlhttp.readyState == 4) {
-               var content = '<html><body>' + xmlhttp.responseText + '</body></html>';
-               var doc = document.getElementById('preview').contentWindow.document;
-               doc.open();
-               //doc.write(content);
-               doc.close();
-             
+               var content = xmlhttp.responseText;
+               document.getElementById('preview').contentWindow.setContent(content);
           }
        }
     </script>

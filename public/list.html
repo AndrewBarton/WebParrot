@@ -50,7 +50,15 @@
         updateMe.textContent = text;
      }
      function cacheReplace(replaces) {
-        
+        var updateMe = document.getElementById(updates.cacheCheck);
+        var text = updateMe.textContent
+        text = text.slice(0, text.length-1);
+        if(replaces.replaced) {
+           text += 'X';
+        }else {
+           text += '*';
+        }
+        updateMe.textContent = text;
      }
   </script>
   <style type="text/css">

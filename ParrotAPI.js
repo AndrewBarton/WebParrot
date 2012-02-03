@@ -40,7 +40,7 @@ app.post(apiPageUrl, function(req, res) {
       }
       
       if(contents.responseSource) {
-         res.send(JSON.stringify(exports.getCachedRequest(contents.responseSource).headers) + JSON.stringify(exports.getCachedRequest(contents.responseSource).data));
+         res.send(JSON.stringify(exports.getCachedRequest(contents.responseSource).data));
       }
       if(contents.getResponseRender) {
          res.send(getCachedRequest(contents.requestSource).data);
@@ -79,7 +79,13 @@ app.post(apiPageUrl, function(req, res) {
             });
       }
       if(contents.cacheReplace) {
-            parrot.cacheReplace(contents.cacheReplace, res);
+         parrot.cacheReplace(contents.cacheReplace, res);
+      }
+      
+      if(contents.changeTranscode) {
+         var transcodes = contents.changeTranscode;
+         parrot.setTranscode(transcodes.url, transcodes.name, transcodes.params);
+         res.send();
       }
       
       

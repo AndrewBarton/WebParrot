@@ -1,2 +1,2 @@
-module.exports = require('./adminPage');
-module.exports = require('./serverTime');
+exports.adminPage = require('./adminPage');
+exports.demoPage = require('./serverTime');

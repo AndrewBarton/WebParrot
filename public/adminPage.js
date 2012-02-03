@@ -8,6 +8,7 @@ var log = require('../ParrotLogger');
 
 var listPage = '';
 var adminPage = '';
+var previewPage = '';
 
 function onListRead(err, data) {
    listPage = data;
@@ -15,6 +16,10 @@ function onListRead(err, data) {
 
 function onAdminRead(err, data){
    adminPage = data;
+}
+
+function onPreviewRead(err, data){
+   previewPage = data;
 }
 
 function adminGet(req, res) {
@@ -61,5 +66,11 @@ app.get('*reqList*', function(req, res) {
    res.send(totalString);
    
 });
+
+app.get('*parrotPreview\.html*', function (req, res) {
+   res.send(previewPage);
+});
+
+fs.readFile('./public/parrotPreview.html', 'utf8', onPreviewRead);
 fs.readFile('./public/list.html', 'utf8', onListRead);
 fs.readFile('./public/admin.html', 'utf8', onAdminRead);

@@ -1,0 +1,1 @@
+exports.tester = require('./testTranscoder');

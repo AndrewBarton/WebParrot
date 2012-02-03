@@ -7,7 +7,6 @@ var express = require('express');
 var translucent = require('./TranslucentMode');
 var transparent = require('./TransparentMode');
 var opaque = require('./OpaqueMode');
-
 var crypto = require('crypto');
 var log = require('./parrotLogger');
 
@@ -15,7 +14,7 @@ var log = require('./parrotLogger');
 
 var proxyPort = 9090;
 
-var reqs = Object.create(null);
+var entries = Object.create(null);
 var mode = translucent;
 var strip = false;
 
@@ -88,11 +87,11 @@ log.log('Proxy running on port: ' + proxyPort, 0);
  * @param response
  */
 function requestBegin(request, response, next) {
-   log.log('request received', 3);
+   log.log('request received: ' + request.url, 3);
    
    //I'M A HACK, REMOVE ME!!!
    request.url = request.url.slice(1);
-   var currentRequest = { myRequest : request,
+   var currentEntry = { request : request,
          reqData: [],
          data: [],
          id : '',
@@ -106,24 +105,26 @@ function requestBegin(request, response, next) {
          etag:null,
          expires:null,
          newCache:false,
-         cacheChecked:false};
+         cacheChecked:false,
+         transcodeName:'testTranscoder',
+         transcodeParams:null};
    var currentRequestID = '';
    var mdSum = crypto.createHash('md5');
    
    if(strip) {
-      delete currentRequest.myRequest.headers['if-none-satch'];
-      delete currentRequest.myRequest.headers['if-modified-since'];
+      delete currentEntry.request.headers['if-none-satch'];
+      delete currentEntry.request.headers['if-modified-since'];
    }
    var portToUse = getPort(request.headers.host);
    var pathToUse = getPath(request.url);
    if(portToUse == proxyPort) {
-      if(!pathToUse.match('demo')) {
+      if(!pathToUse.match('demo') || currentEntry.request.headers == 'passed@through.com') {
          
          next();
          return;
       }else {
-         response.redirect('/FUBAR');
-         return;
+         
+         request.headers.from = 'passed@through.com';
       }
       
    }
@@ -134,7 +135,7 @@ function requestBegin(request, response, next) {
       log.log('data from client received', 3);
       
       //add the chunk to the end of the list of known request chunks
-      currentRequest.reqData[currentRequest.reqData.length] = chunk;
+      currentEntry.reqData[currentEntry.reqData.length] = chunk;
       mdSum.update(chunk);
    });
    
@@ -142,16 +143,16 @@ function requestBegin(request, response, next) {
    request.addListener('end', function() {
       
       //if request is not a get then we need to hash the contents to differentiate between requests with the same URL
-      if(currentRequest.reqData.length > 0) {
-         currentRequest.hash = mdSum.digest('hex');
+      if(currentEntry.reqData.length > 0) {
+         currentEntry.hash = mdSum.digest('hex');
       }
-      currentRequestID = currentRequest.myRequest.url + currentRequest.hash;
+      currentRequestID = currentEntry.request.url + currentEntry.hash;
       log.log('end from client received for: ' + currentRequestID, 3);
       
       
 
       //returns null if in transparent mode or if unknown request in translucent mode.
-      var parrotResponse = mode.genResponse(currentRequest, currentRequestID, reqs);
+      var parrotResponse = mode.genResponse(currentEntry, currentRequestID, entries);
       
       
       
@@ -182,8 +183,8 @@ function requestBegin(request, response, next) {
                
                //if there is a record for this ID and it is not locked
                //add the chunk to the end of list of known response chunks
-               if(reqs[currentRequestID]  && !reqs[currentRequestID].lock) {
-                  reqs[currentRequestID].data[reqs[currentRequestID].data.length] = chunk;
+               if(entries[currentRequestID]  && !entries[currentRequestID].lock) {
+                  entries[currentRequestID].data[entries[currentRequestID].data.length] = chunk;
                }
                response.write(chunk, 'binary');
             });
@@ -191,7 +192,7 @@ function requestBegin(request, response, next) {
             
             
             proxyResponse.addListener('end', function() {
-               if(reqs[currentRequestID].data.length > 0) {
+               if(entries[currentRequestID].data.length > 0) {
                   log.log('end from server received', 3);
                   response.end();
               }else {
@@ -202,9 +203,9 @@ function requestBegin(request, response, next) {
             
             //if there is a record for this ID and it is not locked
             //lastly save the headers of the response for later
-            if(reqs[currentRequestID]  && !reqs[currentRequestID].lock) {
-               reqs[currentRequestID].headers = proxyResponse.headers;
-               reqs[currentRequestID].statusCode = proxyResponse.statusCode;
+            if(entries[currentRequestID]  && !entries[currentRequestID].lock) {
+               entries[currentRequestID].headers = proxyResponse.headers;
+               entries[currentRequestID].statusCode = proxyResponse.statusCode;
             }
             
             
@@ -214,12 +215,12 @@ function requestBegin(request, response, next) {
          });
             
          //if there is no record, or if there is a record and it is not locked
-         if(!reqs[currentRequestID] || !reqs[currentRequestID].lock) {
-            currentRequest.id = currentRequestID;
-            reqs[currentRequestID] = currentRequest;
+         if(!entries[currentRequestID] || !entries[currentRequestID].lock) {
+            currentEntry.id = currentRequestID;
+            entries[currentRequestID] = currentEntry;
          }
-         for(var j = 0; j < currentRequest.reqData.length; j++) {
-            proxyRequest.write(currentRequest.reqData[j], 'binary');
+         for(var j = 0; j < currentEntry.reqData.length; j++) {
+            proxyRequest.write(currentEntry.reqData[j], 'binary');
          }
          proxyRequest.end();
          
@@ -227,14 +228,49 @@ function requestBegin(request, response, next) {
       }else {
          if(!parrotResponse.statusCode) {
             parrotResponse.statusCode = 502;
-            log.log('tried to parrot a response without a statusCode: ' + parrotResponse.myRequest.url, 2);
+            log.log('tried to parrot a response without a statusCode: ' + parrotResponse.request.url, 2);
          }
-         response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
-         if(parrotResponse.body) {
-            for(var j = 0; j < parrotResponse.body.length; j++) {
-               response.write(parrotResponse.body[j], 'binary');
+         
+         
+         
+         
+         if(parrotResponse.data) {
+            //if the entry has a transcoder assigned and it is of a type that can be transcoded
+            if(parrotResponse.transcodeName != null
+                  && (parrotResponse.headers['content-type'] == 'application/javascript'
+                  || parrotResponse.headers['content-type'].search('text') != -1)) {
+               console.log('starting transcode');
+               //need to give the transcoder the entire body at once
+               var body = '';
+               for(var i = 0; i < parrotResponse.data.length; i++) {
+                  body += parrotResponse.data[i].toString();
+               }
+               
+               var transcoder = require('./transcoders/' + parrotResponse.transcodeName);
+               
+               //if the transcoder exists, since they are loaded at call time.
+               if(transcoder) {
+                  body = transcoder.transcode(body, parrotResponse.transcodeParams);
+                  parrotResponse.headers['content-length'] = body.length;
+                  response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
+                  response.write(body);
+               }else {
+                  log.log('Tried to transcode a response with a bad transcoder name: ' + parrotResponse.transcodeName, 1);
+               }
+               
+            }else {
+               response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
+               //no transcoding for this response
+               for(var j = 0; j < parrotResponse.data.length; j++) {
+                  response.write(parrotResponse.data[j], 'binary');
+               }
+               
             }
          }
+         
+         
+         
+        
          
          response.end();
       }
@@ -243,75 +279,25 @@ function requestBegin(request, response, next) {
    });
 
 }
-/*
-function noParrot(request, response, currentRequest, portToUse) {
-   if(portToUse == exports.webPort) {
-      log.log('Request received on web port: ' + request.headers.host, 2);
-   }else {
-      log.log('Request received on proxy port: ' + request.headers.host, 2);
-      portToUse = exports.webPort;
-   }
-   var pathToUse = getPath(request.url);
-   var options = {headers:request.headers,
-                  hostname:request.headers.host.replace(new RegExp(':.*'), ''),
-                  port:portToUse,
-                  path:pathToUse,
-                  method:request.method
-                  };
-   
- //make the request to send to the server
-   log.log('creating request for non-parrot', 3);
-   var proxyRequest = http.request(options);
-   log.log('created request for non-parrot', 3);
-   if(currentRequest.reqData) {
-      for(var i = 0; i < currentRequest.reqData.length; i++) {
-         proxyRequest.write(currentRequest.reqData[i]);
-      }
-   }
-   
-   
-   
-   //add the listener for the response from the server
-   proxyRequest.addListener('response', function(proxyResponse) {
-      log.log('response from server received on special port: ', 3);
-      
-      //add the listener for the data of the http response
-      proxyResponse.addListener('data', function(chunk) {
-         
-         log.log('data from server received on special port: ', 3);
-         response.write(chunk, 'binary');
-      });
-      
-      
-      
-      proxyResponse.addListener('end', function() {
-           response.end();
-      });
-      log.log('writing head of non-parroted proxy stuff', 3);
-      response.writeHead(proxyResponse.statusCode, proxyResponse.headers);
-   });
-   log.log('ending request for non-parrot', 3);
-   proxyRequest.end();
-   log.log('ended request for non-parrot', 3);
-}*/
 
-exports.cacheCheck = function(request, response, callback) {
+exports.cacheCheck = function(request, response, callback, force) {
    log.log('Cache check for: ' + request, 1);
-   request = reqs[request];
-   var pathToUse = getPath(request.myRequest.url);
-   var portToUse = getPort(request.myRequest.headers.host);
-   var requestHeaders = request.myRequest.headers;
-   if(request.myRequest.method.toLowerCase() != 'get') {
+   force = (typeof force == 'undefined')? false:force;
+   var entry = entries[request];
+   var pathToUse = getPath(entry.request.url);
+   var portToUse = getPort(entry.request.headers.host);
+   var requestHeaders = entry.request.headers;
+   if(entry.request.method.toLowerCase() != 'get') {
       return;
    }
-   if(request.headers.etag) {
-      requestHeaders['If-None-Match'] = request.headers.etag;
+   if(entry.headers.etag) {
+      requestHeaders['If-None-Match'] = entry.headers.etag;
    }
    if(request.headers.expires) {
-      requestHeaders['If-Modified-Since'] = request.headers.expires;
+      requestHeaders['If-Modified-Since'] = entry.headers.expires;
    }
    var options = {headers:requestHeaders,
-                  hostname:request.myRequest.headers.host.replace(new RegExp(':.*'), ''),
+                  hostname:entry.request.headers.host.replace(new RegExp(':.*'), ''),
                   port:portToUse,
                   path:pathToUse
                   };
@@ -319,16 +305,16 @@ exports.cacheCheck = function(request, response, callback) {
    
    //add the listener for the response from the server
    proxyRequest.addListener('response', function(proxyResponse) {
-      request.cacheCheck = true;
-      log.log('cache check response from server received', 3);
-      if(proxyResponse.statusCode !='304') {
-         request.newCache = true;
-         request.newHeaders = proxyResponse.headers;
-         request.newData = [];
+      entry.cacheCheck = true;
+      log.log('cache check response from server received status: ' + proxyResponse.statusCode, 3);
+      if(proxyResponse.statusCode !='304' || force) {
+         entry.newCache = true;
+         entry.newHeaders = proxyResponse.headers;
+         entry.newData = [];
          
          //add the listener for the data of the http response
          proxyResponse.addListener('data', function(chunk) {
-            request.newData[request.newData.length] = chunk;
+            entry.newData[entry.newData.length] = chunk;
          });
          proxyResponse.addListener('end', function() {
             callback(true);
@@ -343,15 +329,19 @@ exports.cacheCheck = function(request, response, callback) {
 };
 
 exports.cacheReplace = function(request, response) {
-   log.log('replace cache for: ' + reqs[request].id, 1);
+   log.log('replace cache for: ' + entries[request].id, 1);
    //if we do not know that there is a new page
-   if(!reqs[request].cacheChecked) {
+   if(!entries[request].cacheChecked) {
+      /*
+       * 
+       */
+      
       
       exports.cacheCheck(request, response, function(updated) {
          //if there was a new page, set it in and respond to the client to update itself.
          var sendMe = {cacheReplace:request.id, updated:true};
          if(updated) {
-            request = reqs[request];
+            request = entries[request];
             request.headers = request.newHeaders;
             request.newHeaders = null;
             request.data = request.newData;
@@ -365,10 +355,10 @@ exports.cacheReplace = function(request, response) {
 
          response.send(JSON.stringify(sendMe));
          
-      });
+      }, true);
    }else {
       //we know that it has been checked if there is a new page
-      request = reqs[request];
+      request = entries[request];
       //if there is a new page
       if(request.newCache) {
          
@@ -389,23 +379,23 @@ exports.cacheReplace = function(request, response) {
    
 };
 exports.removeReq = function(request) {
-   delete reqs[request];
+   delete entries[request];
    log.log('remove: ' + request, 1);
 };
 
 exports.getReqs = function() {
-   return reqs;
+   return entries;
 };
 
 exports.toggleLock = function(request) {
-   reqs[request].lock = !reqs[request].lock;
-   log.log('lock: ' + reqs[request].lock + ' on: ' + request, 1);
+   entries[request].lock = !entries[request].lock;
+   log.log('lock: ' + entries[request].lock + ' on: ' + request, 1);
 };
 
 exports.toggleIgnore = function(request) {
    
-   reqs[request].ignore = !reqs[request].ignore;
-   log.log('ignore: ' + reqs[request].ignore + ' on: ' + request, 1);
+   entries[request].ignore = !entries[request].ignore;
+   log.log('ignore: ' + entries[request].ignore + ' on: ' + request, 1);
 };
 
 exports.getMode = function() {
@@ -423,6 +413,15 @@ exports.setMode = function(newMode) {
      mode = opaque;
   }
   log.log('mode set to: ' + newMode, 1);
+};
+
+exports.setTranscode = function(url, name, params) {
+  if(entries[url]) {
+     entries[url].transcodeName = name;
+     entries[url].transcodeparams = params;
+  }else {
+     log.log('tried to set transcode for unknown url: ' + url, 1);
+  }
 };
 
 function getPath(url) {
