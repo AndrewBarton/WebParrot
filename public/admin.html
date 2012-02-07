@@ -11,7 +11,9 @@
 	    var blankIgnored = 'Ignored: ';
 	    var blankEtag = 'ETag: ';
 	    var blankStatus = 'Status code: ';
-	    var blankExpires = 'Expires:';
+	    var blankExpires = 'Expires: ';
+	    var blankCheck = 'Time checked: ';
+	    var blankRet = 'Time retrieved: ';
 	    var url = 'http://' + document.URL.split('/')[2] + '/api';
           
        //update the text shown on the right
@@ -28,6 +30,12 @@
 	          document.getElementById('lockedText').textContent = blankLocked + sele.lock;
 	          document.getElementById('ignoredText').textContent = blankIgnored + sele.ignore;
 	          document.getElementById('etagText').textContent = blankEtag + sele.etag;
+	          var d = new Date(sele.timeRetrieved);
+	          document.getElementById('retText').textContent = blankRet + d.getHours() 
+             + ':' + d.getMinutes() + ':' + d.getSeconds();
+             d = new Date(sele.timeChecked);
+	          document.getElementById('checkText').textContent = blankCheck + d.getHours() 
+             + ':' + d.getMinutes() + ':' + d.getSeconds();
 	       }else {
 	          document.getElementById('urlLink').href = '';
 	          document.getElementById('urlLink').textContent = '';
@@ -36,6 +44,39 @@
 	          document.getElementById('etagText').textContent = blankEtag;
 	          document.getElementById('lockedText').textContent = blankLocked;
 	          document.getElementById('ignoredText').textContent = blankIgnored;
+	          if(sele.length > 1) {
+	             var timeRet = new Date(sele[0].timeRetrieved).getTime();
+	             var timeCheck = new Date(sele[0].timeChecked).getTime();
+	             for(var i = 1; i < sele.length; i++) {
+	                if(Math.abs(timeRet - new Date(sele[i].timeRetrieved).getTime()) > 1000) {
+	                   timeRet = -1;
+	                }
+	                if(Math.abs(timeCheck - new Date(sele[i].timeChecked).getTime()) > 1000) {
+	                   timeCheck = -1;
+	                }
+	             }
+	             
+	             if(timeRet > 0) {
+	                timeRet = new Date(sele[0].timeRetrieved);
+	                document.getElementById('retText').textContent = blankRet + timeRet.getHours() 
+	                    + ':' + timeRet.getMinutes() + ':' + timeRet.getSeconds();
+	             }else {
+	                document.getElementById('retText').textContent = blankRet;
+	             }
+	             
+	             if(timeCheck > 0) {
+	                timeCheck = new Date(sele[0].timeChecked);
+	                document.getElementById('checkText').textContent = blankCheck + timeCheck.getHours() 
+                        + ':' + timeCheck.getMinutes() + ':' + timeCheck.getSeconds();
+	             }else {
+	                document.getElementById('checkText').textContent = blankCheck;
+	             }
+	          }else {
+	             document.getElementById('retText').textContent = blankRet;
+	             document.getElementById('checkText').textContent = blankCheck;
+	          }
+	          
+	          
 	       }
 	   };
         
@@ -130,19 +171,16 @@
 	    function onCacheReplace(xmlhttp) {
 	       if(xmlhttp.readyState == 4) {
              var replaces = jQuery.parseJSON(xmlhttp.responseText);
-             if(replaces) {
-                document.getElementById('requestList').contentWindow.replaceCache(replaces);
-             }
+             document.getElementById('requestList').contentWindow.cacheReplace(replaces);
+             displayOverview(null, null);
           }
 	    }
 	    
 	    function onCacheUpdate(xmlhttp) {
           if(xmlhttp.readyState == 4) {
-             var replaces = jQuery.parseJSON(xmlhttp.responseText);
-             if(replaces) {
-                document.getElementById('requestList').contentWindow.cacheCheck(replaces);
-             }
-             
+             var updates = jQuery.parseJSON(xmlhttp.responseText);
+             document.getElementById('requestList').contentWindow.cacheCheck(updates);
+             displayOverview(null, null);
           }
        }
 	    
@@ -210,14 +248,12 @@
          <iframe src="./reqList" id="requestList" width=100% height=100% scrolling=auto></iframe>
       </th>
       <th height=100%>
-      <form name="theForm">
-         <table height=100%>
+         <table>
          <tr>
             <th align="left">
 	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
 	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
 	            <button type=button onclick="sendRequestList('toggleLock', onLock)">Toggle Lock</button>
-	            <button type=button onclick="openTranscodeDialog()">Set Transcoder</button>
 	            <select id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
@@ -225,30 +261,23 @@
 	            </select>
             </th>
          </tr>
-         <tr>
-            <th>
+         </table>
                <p id="urlText">URL:<a id=urlLink></a><br></p>
                <p id="statusCodeText">Status code:<br></p>
                <p id="etagText">ETag:<br></p>
                <p id="expiresText">Expires:<br></p>
                <p id="lockedText">Locked:<br></p>
                <p id="ignoredText">Ignored:<br></p>
+               <p id="retText">Time retrieved:<br></p>
+               <p id="checkText">Time checked:<br></p>
 		         <select id="displayType">
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>
 		          <option value="requestSource">Request source</option>
 		          <option value="transcoder">Set transcoder</option>
 		         </select>
-		         <button type=button onclick="displayDetails()">Display</button>
-	          </th>
-         </tr>
-         <tr height=100%>
-            <th height=100%>
-               <iframe id=preview width=100% height=100%></iframe>
-            </th>
-         </tr>
-         </table>
-	      </form>
+		         <button type=button onclick="displayDetails()">Display</button> <br>
+               <iframe id=preview width=100% height=55%></iframe>
       </th>
       
       </tr>

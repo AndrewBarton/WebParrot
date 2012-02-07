@@ -69,13 +69,10 @@ app.post(apiPageUrl, function(req, res) {
       }
       if(contents.cacheCheck) {
             parrot.cacheCheck(contents.cacheCheck, res, function(updated) {
-               if(updated) {
-                  req.body.updated = true;
-                  res.send(JSON.stringify(req.body));
-               }else {
-                  req.body.updated = false;
-                  res.send(JSON.stringify(req.body));
-               }
+               var sendMe = {id:req.body.cacheCheck,
+                     time:new Date(),
+                     updated:updated};
+               res.send(JSON.stringify(sendMe));
                
             });
       }

@@ -39,26 +39,11 @@
      }
      
      function cacheCheck(updates) {
-        var updateMe = document.getElementById(updates.cacheCheck);
-        var text = updateMe.textContent
-        text = text.slice(0, text.length-1);
-        if(updates.updated) {
-           text += 'o';
-        }else {
-           text += '*';
-        }
-        updateMe.textContent = text;
+        props[updates.id].timeChecked = updates.time
      }
      function cacheReplace(replaces) {
-        var updateMe = document.getElementById(updates.cacheCheck);
-        var text = updateMe.textContent
-        text = text.slice(0, text.length-1);
-        if(replaces.replaced) {
-           text += 'X';
-        }else {
-           text += '*';
-        }
-        updateMe.textContent = text;
+        props[replaces.id].timeRetrieved = replaces.time
+        props[replaces.id].timeChecked = replaces.time
      }
   </script>
   <style type="text/css">

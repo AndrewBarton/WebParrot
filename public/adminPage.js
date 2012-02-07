@@ -38,7 +38,9 @@ app.get('*admin(\.html)?*', adminGet);
 
 app.get('*transcoder.html*', function (req, res) {
    
-   var tempText = transcoderPage.replace('%REPLACEME', decodeURIComponent(req.query.site));
+   var tempText = transcoderPage.replace('%SITE', decodeURIComponent(req.query.site));
+   tempText = tempText.replace('%NAME', parrotAPI.getCachedRequest(req.query.site).transcodeName);
+   tempText = tempText.replace('%PARAMS', JSON.stringify(parrotAPI.getCachedRequest(req.query.site).transcodeParams));
    res.send(tempText);
 }); 
 
@@ -48,30 +50,23 @@ app.get('*reqList*', function(req, res) {
    var totalString = listPage + '\n<ul id="selectable">';
    var propString = '';
    for(req in entries) {
-      actualReq = entries[req];
+      entry = entries[req];
       var prop = {
-            url:actualReq.request.url,
-            lock:actualReq.lock,
-            ignore:actualReq.ignore,
-            etag:actualReq.headers.etag,
-            status:actualReq.statusCode,
-            expires:actualReq.headers.expires,
-            cacheChecked:actualReq.cacheChecked,
-            newCache:actualReq.newCache
+            url:entry.request.url,
+            lock:entry.lock,
+            ignore:entry.ignore,
+            etag:entry.headers.etag,
+            status:entry.statusCode,
+            expires:entry.headers.expires,
+            cacheChecked:entry.cacheChecked,
+            newCache:entry.newCache,
+            timeRetrieved:entry.timeRetrieved,
+            timeChecked:entry.timeChecked
       };
-      propString += 'props["' + actualReq.request.url + actualReq.hash + '"] =' + JSON.stringify(prop) + '\n';
-      totalString += '<li class="ui-selectee" id= "' + actualReq.request.url + actualReq.hash;
+      propString += 'props["' + entry.request.url + entry.hash + '"] =' + JSON.stringify(prop) + '\n';
+      totalString += '<li class="ui-selectee" id= "' + entry.request.url + entry.hash;
       
-      totalString += '">' + actualReq.request.url + "     " + actualReq.hash;
-      if(actualReq.cacheChecked) {
-         if(actualReq.newCache) {
-            totalString += ' o';
-         }else {
-            totalString += ' *';
-         }
-      }else {
-         totalString += ' X';
-      }
+      totalString += '">' + entry.request.url + "     " + entry.hash;
       totalString += '</li>\n';
    }
    totalString += '</ul> \n</body> \n</html>';

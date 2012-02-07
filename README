@@ -84,14 +84,11 @@ Requests can be set to be locked and/or ignored. Locking a request makes it so
 Refreshing server Cache:
  WebParrot can check if there is an update to the cache and update the cache
  without having you reload the page in your browser. Select a url from the list
- and click either the 'Check Cache' or 'Replace Cache' buttons. An entry in the 
- list ending with a 'X' has unknown cache status. An entry in the list ending 
- with a 'o' has an update and an entry in the list ending with a '*' has no 
- update. 
+ and click either the 'Check Cache' or 'Replace Cache' buttons. 
  
-    Note that at this time the cache only uses the ETag part of the http
+    Note that at this time the cache check only uses the ETag part of the http
     header to determine if there is an update or not. I intend to add a strong
-    validation that checks byte by byte.
+    validation that checks byte by byte. The cache replace will always replace
  
     Also note that the cache refreshing only works for 'GET' requests, it will ignore
     any other methods.
@@ -112,6 +109,11 @@ WebParrot also launches a http server in addition to the proxy server. By defaul
  4. From ParrotAPI get app, which is an express web server.
  5. Add your page using 'app.get('page', callback). Where callback is a function
    that will deliver the page.
+   
+Transcoders:
+WebParrot can send modified content from its cache to the client. The modules that
+ do this are called transcoders and are to be located in the transcoders folder.
+ See transcoderReadme.txt for more information.
 
 
 Copyright Andrew Barton andrewbbarton@gmail.com,  2012

@@ -97,8 +97,10 @@ function requestBegin(request, response, next) {
          expires:null,
          newCache:false,
          cacheChecked:false,
-         transcodeName:null,
-         transcodeParams:null};
+         transcodeName:'',
+         transcodeParams:null,
+         timeRetrieved:new Date(),
+         timeChecked:new Date(),};
    var currentRequestID = '';
    var mdSum = crypto.createHash('md5');
    
@@ -221,7 +223,7 @@ function requestBegin(request, response, next) {
          proxyRequest.end();
          
          if(request.method == 'PUT') {
-            putKnockout(request, null, true);
+            putKnockout(request);
          }
          
       }else {
@@ -234,12 +236,10 @@ function requestBegin(request, response, next) {
          
          
          if(parrotResponse.data) {
-            console.log(parrotResponse.headers['content-type']);
             //if the entry has a transcoder assigned and it is of a type that can be transcoded
-            if(parrotResponse.transcodeName != null
+            if(parrotResponse.transcodeName != ''
                   && (parrotResponse.headers['content-type'].search('javascript') != -1
                   || parrotResponse.headers['content-type'].search('text') != -1)) {
-               console.log('starting transcode');
                //need to give the transcoder the entire body at once
                var body = '';
                for(var i = 0; i < parrotResponse.data.length; i++) {
@@ -292,7 +292,7 @@ exports.cacheCheck = function(request, response, callback, force) {
    if(entry.headers.etag) {
       requestHeaders['If-None-Match'] = entry.headers.etag;
    }
-   if(request.headers.expires) {
+   if(entry.headers.expires) {
       requestHeaders['If-Modified-Since'] = entry.headers.expires;
    }
    var options = {headers:requestHeaders,
@@ -310,6 +310,8 @@ exports.cacheCheck = function(request, response, callback, force) {
          entry.newCache = true;
          entry.newHeaders = proxyResponse.headers;
          entry.newData = [];
+         entry.timeChecked = new Date();
+         
          
          //add the listener for the data of the http response
          proxyResponse.addListener('data', function(chunk) {
@@ -343,12 +345,13 @@ function putKnockout(request) {
                   path:pathToUse
                   };
    var proxyRequest = http.request(options);
-   console.log(options);
    //add the listener for the response from the server
    proxyRequest.addListener('response', function(proxyResponse) {
          entry.newCache = false;
          entry.headers = proxyResponse.headers;
          entry.data = [];
+         entry.timeRetrieved = new Date();
+         entry.timeChecked = new Date();
          
          //add the listener for the data of the http response
          proxyResponse.addListener('data', function(chunk) {
@@ -360,64 +363,31 @@ function putKnockout(request) {
    proxyRequest.end();
 }
 
-exports.cacheReplace = function(request, response, putKnockout) {
+exports.cacheReplace = function(request, response) {
    log.log('replace cache for: ' + entries[request].id, 1);
    //if we do not know that there is a new page
-   if(!entries[request].cacheChecked) {
-      /*
-       * 
-       */
-      
-      
-      exports.cacheCheck(request, response, function(updated) {
-         //if there was a new page, set it in and respond to the client to update itself.
-         var sendMe = {cacheReplace:request.id, updated:true};
-         if(updated) {
-            request = entries[request];
-            request.headers = request.newHeaders;
-            request.newHeaders = null;
-            request.data = request.newData;
-            request.newData = [];
-            request.newCache = false;
-            request.cacheCheck = false;
-            
-         }else {
-            sendMe.updated = false;
-         }
-         if(!putKnockout) {
-            response.send(JSON.stringify(sendMe));
-         }
-         
-         
-      }, true);
-   }else {
-      //we know that it has been checked if there is a new page
-      request = entries[request];
-      //if there is a new page
-      if(request.newCache) {
-         
+   exports.cacheCheck(request, response, function(updated) {
+      //if there was a new page, set it in and respond to the client to update itself.
+      var sendMe = {id:entries[request].id, updated:true, time:new Date()};
+      if(updated) {
+         request = entries[request];
          request.headers = request.newHeaders;
          request.newHeaders = null;
          request.data = request.newData;
          request.newData = [];
          request.newCache = false;
          request.cacheCheck = false;
-         var sendMe = {cacheReplace:request.id};
-         
-         if(!putKnockout) {
-            response.send(JSON.stringify(sendMe));
-         }
+         entry.timeRetrieved = new Date();
+         entry.timeChecked = new Date();
          
       }else {
-         //no new page, no part of the client needs to know
-         if(!putKnockout) {
-            response.send('');
-         }
-         
+         sendMe.updated = false;
+         entry.timeChecked = new Date();
       }
-     
-   }
-   
+         response.send(JSON.stringify(sendMe));
+      
+      
+   }, true);
 };
 exports.removeReq = function(request) {
    delete entries[request];
@@ -451,7 +421,7 @@ exports.setMode = function(newMode) {
 exports.setTranscode = function(url, name, params) {
   if(entries[url]) {
      entries[url].transcodeName = name;
-     entries[url].transcodeparams = params;
+     entries[url].transcodeParams = params;
   }else {
      log.log('tried to set transcode for unknown url: ' + url, 1);
   }

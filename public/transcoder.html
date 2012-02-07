@@ -6,7 +6,9 @@
   <head>
     <title>Web Parrot Transcoder page</title>
      <script  type="text/javascript">
-     var site = '%REPLACEME';
+     var site = '%SITE';
+     var currentName = '%NAME';
+     var currentParams = %PARAMS;
      var url = 'http://' + document.URL.split('/')[2] + '/api';
      function sendTranscoder() {
         var text = document.getElementById('transcoderParamsArea').value
@@ -26,13 +28,24 @@
         xmlhttp.setRequestHeader('Content-Type', "application/json");
         xmlhttp.send(JSON.stringify(entry));
      }
+     
+     window.addEventListener('load', function() {
+        document.getElementById('transcoderNameArea').value = currentName;
+        if(currentParams) {
+           var params = JSON.stringify(currentParams);
+           console.log(params);
+           params = params.substring(1, params.length);
+           document.getElementById('transcoderParamsArea').value = params;
+        }
+       
+     });
      </script>
   </head>
   <body>
   <p>Transcoder name:</p>
-  <textarea rows="1" cols="50" id='transcoderNameArea'></textarea>
-  <p>Parameters (in JSON)</p>
-  <textarea rows="20" cols="50" id='transcoderParamsArea'>example:value</textarea>
+  <textarea rows="0" cols="50" id='transcoderNameArea'></textarea>
+  <p>Parameters (in JSON):</p>
+  <textarea rows="10" cols="50" id='transcoderParamsArea'>"example":"value"</textarea><br>
   <button type=button id=send onclick="sendTranscoder()">Set Transcoder</button>
   </body>
 </html>
