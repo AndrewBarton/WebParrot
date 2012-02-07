@@ -1,0 +1,38 @@
+<!--   Copyright Andrew Barton andrewbbarton@gmail.com,  2012
+       http://www.opensource.org/licenses/MIT, see LICENSE -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Web Parrot Transcoder page</title>
+     <script  type="text/javascript">
+     var site = '%REPLACEME';
+     var url = 'http://' + document.URL.split('/')[2] + '/api';
+     function sendTranscoder() {
+        var text = document.getElementById('transcoderParamsArea').value
+        var entry = Object.create(null);
+        entry.setTranscoder = Object.create(null);
+        entry.setTranscoder.name = document.getElementById('transcoderNameArea').value;
+        entry.setTranscoder.url = site;
+        if(text != 'example:value') {
+           console.log(text);
+           entry.setTranscoder.params = JSON.parse('{' + text + '}');
+        }else {
+           entry.setTranscoder.params = '';
+        }
+        var xmlhttp=new XMLHttpRequest();
+       
+        xmlhttp.open("POST", url, true);
+        xmlhttp.setRequestHeader('Content-Type', "application/json");
+        xmlhttp.send(JSON.stringify(entry));
+     }
+     </script>
+  </head>
+  <body>
+  <p>Transcoder name:</p>
+  <textarea rows="1" cols="50" id='transcoderNameArea'></textarea>
+  <p>Parameters (in JSON)</p>
+  <textarea rows="20" cols="50" id='transcoderParamsArea'>example:value</textarea>
+  <button type=button id=send onclick="sendTranscoder()">Set Transcoder</button>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "author": "Andrew Barton <AndrewBBarton@gmail.com>",
+  "name": "WebParrot",
+  "description": "A selectively caching proxy for repeatable client testing",
+  "version": "0.0.1",
+  "homepage": "https://github.com/AndrewBarton/WebParrot",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/AndrewBarton/WebParrot.git"
+  },
+  "main": "WebParrot.js",
+  "engines": {
+    "node": "~0.6.6"
+  },
+  "dependencies": 
+     {"express" : ""},
+  "devDependencies": {}
+}

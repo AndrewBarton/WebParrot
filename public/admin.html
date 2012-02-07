@@ -72,6 +72,8 @@
 	           if(renderMode == 'responseRender') {
 	              var prop = document.getElementById('requestList').contentWindow.getSelected();
 	              document.getElementById('preview').src = prop[0].url;
+	           }else if(renderMode == 'transcoder') {
+	              document.getElementById('preview').src = './transcoder.html?site=' + encodeURIComponent(selected[0]);
 	           }else {
 	              
 	              if(document.getElementById('preview').src.indexOf('parrotPreview.html') == -1) {
@@ -191,6 +193,7 @@
                document.getElementById('preview').contentWindow.setContent(content);
           }
        }
+       
     </script>
     <style type="text/css">
       html, body {height:95%;}
@@ -206,7 +209,7 @@
          <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)">Replace Cache</button>
          <iframe src="./reqList" id="requestList" width=100% height=100% scrolling=auto></iframe>
       </th>
-      <th>
+      <th height=100%>
       <form name="theForm">
          <table height=100%>
          <tr>
@@ -214,6 +217,7 @@
 	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
 	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
 	            <button type=button onclick="sendRequestList('toggleLock', onLock)">Toggle Lock</button>
+	            <button type=button onclick="openTranscodeDialog()">Set Transcoder</button>
 	            <select id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
@@ -233,6 +237,7 @@
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>
 		          <option value="requestSource">Request source</option>
+		          <option value="transcoder">Set transcoder</option>
 		         </select>
 		         <button type=button onclick="displayDetails()">Display</button>
 	          </th>

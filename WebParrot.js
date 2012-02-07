@@ -4,9 +4,6 @@
 
 var http = require('http');
 var express = require('express');
-var translucent = require('./TranslucentMode');
-var transparent = require('./TransparentMode');
-var opaque = require('./OpaqueMode');
 var crypto = require('crypto');
 var log = require('./parrotLogger');
 
@@ -15,7 +12,7 @@ var log = require('./parrotLogger');
 var proxyPort = 9090;
 
 var entries = Object.create(null);
-var mode = translucent;
+var mode = require('./modes/translucent');
 var strip = false;
 
 
@@ -31,13 +28,7 @@ function parseArgs() {
       }
       if(args[i] == '-m') {
          i++;
-         if(args[i].toLowerCase() == 'transparent'){
-            mode = transparent;
-         }else if(args[i].toLowerCase() == 'opaque') {
-            mode = opaque;
-         }else {
-            mode = translucent;
-         }
+         mode = require('./modes/' + args[i]);
       }
       if(args[i] == '-w') {
          i++;
@@ -106,7 +97,7 @@ function requestBegin(request, response, next) {
          expires:null,
          newCache:false,
          cacheChecked:false,
-         transcodeName:'testTranscoder',
+         transcodeName:null,
          transcodeParams:null};
    var currentRequestID = '';
    var mdSum = crypto.createHash('md5');
@@ -117,6 +108,8 @@ function requestBegin(request, response, next) {
    }
    var portToUse = getPort(request.headers.host);
    var pathToUse = getPath(request.url);
+   
+   
    if(portToUse == proxyPort) {
       if(!pathToUse.match('demo') || currentEntry.request.headers == 'passed@through.com') {
          
@@ -149,11 +142,14 @@ function requestBegin(request, response, next) {
       currentRequestID = currentEntry.request.url + currentEntry.hash;
       log.log('end from client received for: ' + currentRequestID, 3);
       
+      var parrotResponse = null;
       
-
       //returns null if in transparent mode or if unknown request in translucent mode.
-      var parrotResponse = mode.genResponse(currentEntry, currentRequestID, entries);
-      
+      if(request.method != 'PUT') {
+         parrotResponse = mode.genResponse(currentEntry, currentRequestID, entries);
+      }else {
+         log.log('put recieved, bypassing parrot and refreshing cache for: ' + request.url, 1);
+      }
       
       
       //if there is not a parrot response
@@ -224,6 +220,9 @@ function requestBegin(request, response, next) {
          }
          proxyRequest.end();
          
+         if(request.method == 'PUT') {
+            putKnockout(request, null, true);
+         }
          
       }else {
          if(!parrotResponse.statusCode) {
@@ -235,9 +234,10 @@ function requestBegin(request, response, next) {
          
          
          if(parrotResponse.data) {
+            console.log(parrotResponse.headers['content-type']);
             //if the entry has a transcoder assigned and it is of a type that can be transcoded
             if(parrotResponse.transcodeName != null
-                  && (parrotResponse.headers['content-type'] == 'application/javascript'
+                  && (parrotResponse.headers['content-type'].search('javascript') != -1
                   || parrotResponse.headers['content-type'].search('text') != -1)) {
                console.log('starting transcode');
                //need to give the transcoder the entire body at once
@@ -247,7 +247,6 @@ function requestBegin(request, response, next) {
                }
                
                var transcoder = require('./transcoders/' + parrotResponse.transcodeName);
-               
                //if the transcoder exists, since they are loaded at call time.
                if(transcoder) {
                   body = transcoder.transcode(body, parrotResponse.transcodeParams);
@@ -328,7 +327,40 @@ exports.cacheCheck = function(request, response, callback, force) {
    proxyRequest.end();
 };
 
-exports.cacheReplace = function(request, response) {
+function putKnockout(request) {
+   if(!entries[request.url + '0']) {
+      return;
+   }else {
+      var entry = entries[request.url + '0'];
+   }
+   var pathToUse = getPath(request.url);
+   var portToUse = getPort(request.headers.host);
+   var requestHeaders = request.headers;
+   
+   var options = {headers:requestHeaders,
+                  hostname:requestHeaders.host.replace(new RegExp(':.*'), ''),
+                  port:portToUse,
+                  path:pathToUse
+                  };
+   var proxyRequest = http.request(options);
+   console.log(options);
+   //add the listener for the response from the server
+   proxyRequest.addListener('response', function(proxyResponse) {
+         entry.newCache = false;
+         entry.headers = proxyResponse.headers;
+         entry.data = [];
+         
+         //add the listener for the data of the http response
+         proxyResponse.addListener('data', function(chunk) {
+            entry.data[entry.newData.length] = chunk;
+            
+         });
+     
+   });
+   proxyRequest.end();
+}
+
+exports.cacheReplace = function(request, response, putKnockout) {
    log.log('replace cache for: ' + entries[request].id, 1);
    //if we do not know that there is a new page
    if(!entries[request].cacheChecked) {
@@ -352,8 +384,10 @@ exports.cacheReplace = function(request, response) {
          }else {
             sendMe.updated = false;
          }
-
-         response.send(JSON.stringify(sendMe));
+         if(!putKnockout) {
+            response.send(JSON.stringify(sendMe));
+         }
+         
          
       }, true);
    }else {
@@ -369,10 +403,17 @@ exports.cacheReplace = function(request, response) {
          request.newCache = false;
          request.cacheCheck = false;
          var sendMe = {cacheReplace:request.id};
-         response.send(JSON.stringify(sendMe));
+         
+         if(!putKnockout) {
+            response.send(JSON.stringify(sendMe));
+         }
+         
       }else {
          //no new page, no part of the client needs to know
-         response.send('');
+         if(!putKnockout) {
+            response.send('');
+         }
+         
       }
      
    }
@@ -403,15 +444,7 @@ exports.getMode = function() {
 };
 
 exports.setMode = function(newMode) {
-  if(newMode.toLowerCase() == 'translucent') {
-     mode = translucent;
-  }
-  if(newMode.toLowerCase() == 'transparent') {
-     mode = transparent;
-  }
-  if(newMode.toLowerCase() == 'opaque') {
-     mode = opaque;
-  }
+  mode = require('./modes/' + newMode);
   log.log('mode set to: ' + newMode, 1);
 };
 
@@ -426,7 +459,12 @@ exports.setTranscode = function(url, name, params) {
 
 function getPath(url) {
    var pathToUse = url.slice(7);
-   pathToUse = pathToUse.slice(pathToUse.search('/'));
+   if(pathToUse.indexOf('/') != -1) {
+
+      pathToUse = pathToUse.slice(pathToUse.search('/'));
+   }else {
+      pathToUse = '';
+   }
    return pathToUse;
 }
 

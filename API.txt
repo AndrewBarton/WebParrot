@@ -1,1 +1,32 @@
-//\TODO, explain the API, it's very simple, it just accepts JSON POSTs for a few things.
+WebParrot's API accepts POST messages in JSON to '/api'
+
+These JSON messages can have the following attributes:
+removeRequest
+requestSource
+responseSource
+toggleIgnore
+toggleLock
+mode
+getMode
+cacheCheck
+cacheReplace
+setTranscoder
+
+Each of these accepts the following sub-attributes:
+
+removeRequest is an array of IDs to be removed
+requestSource is an ID 
+responseSource is an ID
+toggleIgnore is an array of IDs to have their ignores toggled
+toggleLock is an array of IDs to have their locks toggled
+mode is a string of the mode to go into
+getMode contents ignored
+cecheCheck is an ID
+cacheReplace is an ID
+setTranscoder
+ -url: the ID of the entry to set the transcoder for
+ -name: The name of the transcoder
+ -params: an object containing the paramaters for the transcoder
+ 
+ Copyright Andrew Barton andrewbbarton@gmail.com,  2012
+http://www.opensource.org/licenses/MIT, see LICENSE

@@ -1,4 +1,4 @@
-var log = require('./parrotLogger');
+var log = require('../parrotLogger');
    
 exports.name = 'translucent';
 

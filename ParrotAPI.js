@@ -18,11 +18,15 @@ app.get('/', function(req, res) {
 
 //possible actions =
    //remove request
-   //get response text
    //get request text
-   //set request to ignore
-   //set request to lock
+   //get response text
+   //toggle entry ignore
+   //toggle entry lock
    //change mode
+   //get mode
+   //check cache entry
+   //refresh cache entry
+   //set transcoder
    
 app.post(apiPageUrl, function(req, res) {
       var contents = req.body;
@@ -41,9 +45,6 @@ app.post(apiPageUrl, function(req, res) {
       
       if(contents.responseSource) {
          res.send(JSON.stringify(exports.getCachedRequest(contents.responseSource).data));
-      }
-      if(contents.getResponseRender) {
-         res.send(getCachedRequest(contents.requestSource).data);
       }
       
       if(contents.toggleIgnore) {
@@ -82,8 +83,9 @@ app.post(apiPageUrl, function(req, res) {
          parrot.cacheReplace(contents.cacheReplace, res);
       }
       
-      if(contents.changeTranscode) {
-         var transcodes = contents.changeTranscode;
+      if(contents.setTranscoder) {
+         var transcodes = contents.setTranscoder;
+         log.log('setting transcoder: ' + transcodes.url + ', ' + transcodes.name, 1);
          parrot.setTranscode(transcodes.url, transcodes.name, transcodes.params);
          res.send();
       }
