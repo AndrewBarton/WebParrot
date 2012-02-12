@@ -6,38 +6,17 @@ var app = parrotAPI.app;
 var fs = require('fs');
 var log = require('../ParrotLogger');
 
-var listPage = '';
-var adminPage = '';
-var previewPage = '';
-var transcoderPage = '';
 
-function onListRead(err, data) {
-   listPage = data;
-}
 
-function onAdminRead(err, data){
-   adminPage = data;
-}
-
-function onPreviewRead(err, data){
-   previewPage = data;
-}
-
-function onTranscoderRead(err, data) {
-   transcoderPage = data;
-}
-
-function adminGet(req, res) {
+app.get('*admin(\.html)?*', function(req, res) {
    log.log('admin page request received', 3);
+   var adminPage = fs.readFileSync('./public/admin.html', 'utf-8');
    res.send(adminPage);
-}
-
-
-
-app.get('*admin(\.html)?*', adminGet);
+});
 
 app.get('*transcoder.html*', function (req, res) {
-   
+
+   var transcoderPage = fs.readFileSync('./public/transcoder.html', 'utf8');
    var tempText = transcoderPage.replace('%SITE', decodeURIComponent(req.query.site));
    tempText = tempText.replace('%NAME', parrotAPI.getCachedRequest(req.query.site).transcodeName);
    tempText = tempText.replace('%PARAMS', JSON.stringify(parrotAPI.getCachedRequest(req.query.site).transcodeParams));
@@ -47,6 +26,7 @@ app.get('*transcoder.html*', function (req, res) {
 app.get('*reqList*', function(req, res) {
    log.log('reqList request received', 3);
    var entries = parrotAPI.getCachedReqsuests();
+   var listPage = fs.readFileSync('./public/list.html', 'utf-8');
    var totalString = listPage + '\n<ul id="selectable">';
    var propString = '';
    for(req in entries) {
@@ -76,10 +56,12 @@ app.get('*reqList*', function(req, res) {
 });
 
 app.get('*parrotPreview\.html*', function (req, res) {
+
+   var previewPage = fs.readFileSync('./public/parrotPreview.html', 'utf8');
    res.send(previewPage);
 });
 
-fs.readFile('./public/parrotPreview.html', 'utf8', onPreviewRead);
-fs.readFile('./public/list.html', 'utf8', onListRead);
-fs.readFile('./public/admin.html', 'utf8', onAdminRead);
-fs.readFile('./public/transcoder.html', 'utf8', onTranscoderRead);
+app.get('*', function (req, res) {
+   log.log('admin page request received', 3);
+   res.redirect('/admin');
+});

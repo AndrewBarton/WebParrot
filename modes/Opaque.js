@@ -2,18 +2,18 @@ var log = require('../parrotLogger');
 
 exports.name = 'opaque';
 
-exports.genResponse = function(request, ID, entries) {
+exports.genResponse = function(request, entries) {
    response = Object.create(null);
-   if(entries[ID] != null) {
+   if(entries[request.id] != null) {
       
-      if(entries[ID].ignore) {
+      if(entries[request.id].ignore) {
          log.log("opaque Mode: ignored request received: " + ID, 2);
          return null;
       }
       
       
       log.log("opaque Mode: known request received: " + ID, 2);
-      response = entries[ID];
+      response = entries[request.id];
    }else {
       log.log("opaque Mode: unknown request received: " + ID, 2);
       response.chunk = "";

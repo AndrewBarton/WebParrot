@@ -2,25 +2,25 @@ var log = require('../parrotLogger');
    
 exports.name = 'translucent';
 
-exports.genResponse = function respo(request, ID, entries) {
+exports.genResponse = function respo(request, entries) {
    
    if(request.ignore) {
-      log.log("translucent Mode: ignored request received: " + ID, 2);
+      log.log("translucent Mode: ignored request received: " + request.id, 2);
       return null;
    }
    
-   if(entries[ID] != null) {
+   if(entries[request.id] != null) {
       
-      if(entries[ID].ignore) {
-         log.log("translucent Mode: ignored request received: " + ID, 2);
+      if(entries[request.id].ignore) {
+         log.log("translucent Mode: ignored request received: " + request.id, 2);
          return null;
       }
       
       
-      log.log("translucent Mode: known request received: " + ID, 2);
-      return entries[ID];
+      log.log("translucent Mode: known request received: " + request.id, 2);
+      return entries[request.id];
    }else {
-      log.log("translucent Mode: unknown request received: " + ID, 2);
+      log.log("translucent Mode: unknown request received: " + request.id, 2);
       return null;
    }
 };

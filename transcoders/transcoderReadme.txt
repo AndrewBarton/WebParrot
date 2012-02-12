@@ -3,7 +3,10 @@ Introduction to transcoders
 Transcoders allow you to modify the content sent from the cache to the client.
 
 A transcoder must be located in the transcoders folder and will be 'required' by the parrot as needed.
-any transcoders must export a function called transcode that takes the body and an object containing any parameters
+any transcoders must export a function called transcode that takes the body, an object containing any parameters, and the
+cache entry (for modifying headers, see currentEntry in WebParrot.js).
+
+Transcoders will only be run if the content is of a type containing 'text' or 'javascript' and is not gziped.
 
 see testTranscoder.js for an example
 
