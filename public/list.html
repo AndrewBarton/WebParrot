@@ -40,10 +40,12 @@
      
      function cacheCheck(updates) {
         props[updates.id].timeChecked = updates.time
+        props[updates.id].newVer = true;
      }
      function cacheReplace(replaces) {
         props[replaces.id].timeRetrieved = replaces.time
         props[replaces.id].timeChecked = replaces.time
+        props[replaces.id].newVer = false;
      }
   </script>
   <style type="text/css">

@@ -7,13 +7,6 @@
     <title>Web Parrot admin page</title>
      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script type"text/javascript">
-	    var blankLocked = 'Locked: ';
-	    var blankIgnored = 'Ignored: ';
-	    var blankEtag = 'ETag: ';
-	    var blankStatus = 'Status code: ';
-	    var blankExpires = 'Expires: ';
-	    var blankCheck = 'Time checked: ';
-	    var blankRet = 'Time retrieved: ';
 	    var url = 'http://' + document.URL.split('/')[2] + '/api';
           
        //update the text shown on the right
@@ -25,55 +18,60 @@
 	          sele = sele[0];
 	          document.getElementById('urlLink').href = sele.url;
 	          document.getElementById('urlLink').textContent = sele.url;
-	          document.getElementById('statusCodeText').textContent = blankStatus + sele.status;
-	          document.getElementById('expiresText').textContent = blankExpires + sele.expires;
-	          document.getElementById('lockedText').textContent = blankLocked + sele.lock;
-	          document.getElementById('ignoredText').textContent = blankIgnored + sele.ignore;
-	          document.getElementById('etagText').textContent = blankEtag + sele.etag;
+	          document.getElementById('statusCodeText').textContent = sele.status;
+	          document.getElementById('expiresText').textContent = sele.expires;
+	          document.getElementById('lockedText').textContent = sele.lock;
+	          document.getElementById('ignoredText').textContent = sele.ignore;
+	          document.getElementById('etagText').textContent = sele.etag;
+	          document.getElementById('newVersionText').textContent = sele.newVer;
 	          var d = new Date(sele.timeRetrieved);
-	          document.getElementById('retText').textContent = blankRet + d.getHours() 
+	          document.getElementById('retText').textContent = d.getHours() 
              + ':' + d.getMinutes() + ':' + d.getSeconds();
              d = new Date(sele.timeChecked);
-	          document.getElementById('checkText').textContent = blankCheck + d.getHours() 
+	          document.getElementById('checkText').textContent =  + d.getHours() 
              + ':' + d.getMinutes() + ':' + d.getSeconds();
 	       }else {
 	          document.getElementById('urlLink').href = '';
 	          document.getElementById('urlLink').textContent = '';
-	          document.getElementById('statusCodeText').textContent = blankStatus;
-	          document.getElementById('expiresText').textContent = blankExpires;
-	          document.getElementById('etagText').textContent = blankEtag;
-	          document.getElementById('lockedText').textContent = blankLocked;
-	          document.getElementById('ignoredText').textContent = blankIgnored;
+	          document.getElementById('statusCodeText').textContent = '';
+	          document.getElementById('expiresText').textContent = '';
+	          document.getElementById('etagText').textContent = '';
+	          document.getElementById('lockedText').textContent = '';
+	          document.getElementById('ignoredText').textContent = '';
 	          if(sele.length > 1) {
 	             var timeRet = new Date(sele[0].timeRetrieved).getTime();
 	             var timeCheck = new Date(sele[0].timeChecked).getTime();
-	             for(var i = 1; i < sele.length; i++) {
-	                if(Math.abs(timeRet - new Date(sele[i].timeRetrieved).getTime()) > 1000) {
-	                   timeRet = -1;
-	                }
-	                if(Math.abs(timeCheck - new Date(sele[i].timeChecked).getTime()) > 1000) {
-	                   timeCheck = -1;
-	                }
-	             }
+	             var newVer = true;
+	             sele.forEach(function(item) {
+	                if(Math.abs(timeRet - new Date(item.timeRetrieved).getTime()) > 1000) {
+                      timeRet = -1;
+                   }
+                   if(Math.abs(timeCheck - new Date(item.timeChecked).getTime()) > 1000) {
+                      timeCheck = -1;
+                   }
+                   newVer &= item.newVer;
+	             });
+	             
+	             document.getElementById('newVersionText'.textContent = newVer);
 	             
 	             if(timeRet > 0) {
 	                timeRet = new Date(sele[0].timeRetrieved);
-	                document.getElementById('retText').textContent = blankRet + timeRet.getHours() 
+	                document.getElementById('retText').textContent = timeRet.getHours() 
 	                    + ':' + timeRet.getMinutes() + ':' + timeRet.getSeconds();
 	             }else {
-	                document.getElementById('retText').textContent = blankRet;
+	                document.getElementById('retText').textContent = '';
 	             }
 	             
 	             if(timeCheck > 0) {
 	                timeCheck = new Date(sele[0].timeChecked);
-	                document.getElementById('checkText').textContent = blankCheck + timeCheck.getHours() 
+	                document.getElementById('checkText').textContent = timeCheck.getHours() 
                         + ':' + timeCheck.getMinutes() + ':' + timeCheck.getSeconds();
 	             }else {
-	                document.getElementById('checkText').textContent = blankCheck;
+	                document.getElementById('checkText').textContent = '';
 	             }
 	          }else {
-	             document.getElementById('retText').textContent = blankRet;
-	             document.getElementById('checkText').textContent = blankCheck;
+	             document.getElementById('retText').textContent = '';
+	             document.getElementById('checkText').textContent = '';
 	          }
 	          
 	          
@@ -228,14 +226,22 @@
        function onDisplayDetail(xmlhttp) {
           if(xmlhttp.readyState == 4) {
                var content = xmlhttp.responseText;
-               document.getElementById('preview').contentWindow.setContent(content);
+               if(document.getElementById('preview').contentWindow.setContent) {
+                  document.getElementById('preview').contentWindow.setContent(content);
+               }else {
+                  document.getElementById('preview').onload = function() {
+                     document.getElementById('preview').contentWindow.setContent(content);
+                     };
+                }
+               
           }
        }
        
     </script>
     <style type="text/css">
       html, body {height:95%;}
-      p {text-align:left;}
+      span {float:left; margin:0;}
+      a {float: left;}
     </style>
   </head>
   <body>
@@ -262,14 +268,15 @@
             </th>
          </tr>
          </table>
-               <p id="urlText">URL:<a id=urlLink></a><br></p>
-               <p id="statusCodeText">Status code:<br></p>
-               <p id="etagText">ETag:<br></p>
-               <p id="expiresText">Expires:<br></p>
-               <p id="lockedText">Locked:<br></p>
-               <p id="ignoredText">Ignored:<br></p>
-               <p id="retText">Time retrieved:<br></p>
-               <p id="checkText">Time checked:<br></p>
+               <span>URL:</span><a id=urlLink></a><br>
+               <span>Status code:</span><span id="statusCodeText"></span><br>
+               <span>ETag:</span><span id="etagText"></span><br>
+               <span>Expires:</span><span id="expiresText"></span><br>
+               <span>Locked:</span><span id="lockedText"></span><br>
+               <span>Ignored:</span><span id="ignoredText"></span><br>
+               <span>Time retrieved:</span><span id="retText"></span><br>
+               <span>Time checked:</span><span id="checkText"></span><br>
+               <span>New version:</span><span id="newVersionText"></span><br>
 		         <select id="displayType">
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>
@@ -277,7 +284,7 @@
 		          <option value="transcoder">Set transcoder</option>
 		         </select>
 		         <button type=button onclick="displayDetails()">Display</button> <br>
-               <iframe id=preview width=100% height=55%></iframe>
+               <iframe id=preview width=100% height=70%></iframe>
       </th>
       
       </tr>

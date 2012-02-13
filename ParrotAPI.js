@@ -2,10 +2,12 @@
 // http://www.opensource.org/licenses/MIT, see LICENSE
 
 var parrot = require('./WebParrot');
+var log = parrot.logger;
+exports.logger = log;
 var express = require('express');
-var log = require('./parrotLogger');
 
 var app = parrot.app;
+
 
 exports.app = app;
 
@@ -38,13 +40,18 @@ app.post(apiPageUrl, function(req, res) {
       }
       
       if(contents.requestSource) {
-         request = exports.getCachedRequest(contents.requestSource).myRequest;
-         var text = 'method: ' + request.method + '\n';
-         res.send(text + request.headers);
+         var entry = exports.getCachedRequest(contents.requestSource);
+         
+         var text = 'method: ' + entry.request.method + '\n' + entry.request.headers + '\n' + entry.reqData;
+         res.send(text);
       }
       
       if(contents.responseSource) {
-         res.send(JSON.stringify(exports.getCachedRequest(contents.responseSource).data));
+         var body = '';
+         exports.getCachedRequest(contents.responseSource).data.forEach(function(part) {
+            body += part;
+         });
+         res.send(body);
       }
       
       if(contents.toggleIgnore) {
@@ -82,7 +89,6 @@ app.post(apiPageUrl, function(req, res) {
       
       if(contents.setTranscoder) {
          var transcodes = contents.setTranscoder;
-         log.log('setting transcoder: ' + transcodes.url + ', ' + transcodes.name, 1);
          parrot.setTranscode(transcodes.url, transcodes.name, transcodes.params);
          res.send();
       }
@@ -101,4 +107,7 @@ exports.getCachedRequest = function (ID) {
 exports.getMode =  function () {
    return parrot.getMode();
 };
+
+
+
 require('./public/');

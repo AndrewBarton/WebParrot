@@ -15,7 +15,7 @@
         }
 
         greet() {
-          let element = null;
+          let element = document.querySelector('#message');
           element.textContent = this.message;
         }
       }
@@ -26,6 +26,7 @@
    
 </head>
 <body>
+<h1 id="message"></h1>
 <p>Server time at load is:%REPLACEME</p>
 <p id="clientLoadTime"></p>
 

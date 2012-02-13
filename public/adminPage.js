@@ -39,9 +39,9 @@ app.get('*reqList*', function(req, res) {
             status:entry.statusCode,
             expires:entry.headers.expires,
             cacheChecked:entry.cacheChecked,
-            newCache:entry.newCache,
+            newVer:entry.newCache,
             timeRetrieved:entry.timeRetrieved,
-            timeChecked:entry.timeChecked
+            timeChecked:entry.timeChecked,
       };
       propString += 'props["' + entry.request.url + entry.hash + '"] =' + JSON.stringify(prop) + '\n';
       totalString += '<li class="ui-selectee" id= "' + entry.request.url + entry.hash;
