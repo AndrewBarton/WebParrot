@@ -8,7 +8,6 @@ var crypto = require('crypto');
 var log = require('./parrotLogger');
 
 
-
 var proxyPort = 9090;
 var defaultTranscoder = 'traceurCompiler';
 var entries = Object.create(null);
@@ -113,6 +112,7 @@ function requestBegin(request, response, next) {
    
    if(portToUse == proxyPort) {
       if(!pathToUse.match('/demo') || currentEntry.request.headers.from == 'passed@through.com') {
+
          next();
          return;
       }else {

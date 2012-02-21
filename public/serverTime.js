@@ -11,6 +11,9 @@ function onStarterRead(err, data) {
 app.get('*demo*', function(req, res) {
    console.log('demo asked for');
    var date = new Date(Date.now());
-   res.send(demoPage.replace('%REPLACEME', date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()));
+   var temp = demoPage.replace('%DATE', date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds());
+   console.log(req.headers['from']);
+   temp = temp.replace('%PROXY', req.headers['from'] == 'passed@through.com' ? 'Passed through proxy' : 'NOT passed through proxy');
+   res.send(temp);
 });
 fs.readFile('./public/demo.html', 'utf8', onStarterRead);

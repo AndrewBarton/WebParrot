@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+   <script src="/traceur/traceur.js"></script>
 	 <script type="text/javascript">
    window.onload = function(event) {
       var date = new Date(Date.now());
       document.getElementById('clientLoadTime').textContent = "Client time at load is: " +  date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
    }
-   </script>  
-   
-   <script type="text/traceur">
       class Greeter {
         constructor(message) {
           this.message = message;
@@ -27,7 +25,8 @@
 </head>
 <body>
 <h1 id="message"></h1>
-<p>Server time at load is:%REPLACEME</p>
+<p>%PROXY</p>
+<p>Server time at load is:%DATE</p>
 <p id="clientLoadTime"></p>
 
 </body>

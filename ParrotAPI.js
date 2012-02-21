@@ -8,7 +8,6 @@ var express = require('express');
 
 var app = parrot.app;
 
-
 exports.app = app;
 
 var apiPageUrl = "*api*";

@@ -1,12 +1,13 @@
+<!DOCTYPE html>
+
 <!--   Copyright Andrew Barton andrewbbarton@gmail.com,  2012
        http://www.opensource.org/licenses/MIT, see LICENSE -->
 
-<!DOCTYPE html>
 <html>
   <head>
     <title>Web Parrot admin page</title>
      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
-    <script type"text/javascript">
+    <script type="text/javascript">
 	    var url = 'http://' + document.URL.split('/')[2] + '/api';
           
        //update the text shown on the right
@@ -24,12 +25,10 @@
 	          document.getElementById('ignoredText').textContent = sele.ignore;
 	          document.getElementById('etagText').textContent = sele.etag;
 	          document.getElementById('newVersionText').textContent = sele.newVer;
-	          var d = new Date(sele.timeRetrieved);
-	          document.getElementById('retText').textContent = d.getHours() 
-             + ':' + d.getMinutes() + ':' + d.getSeconds();
-             d = new Date(sele.timeChecked);
-	          document.getElementById('checkText').textContent =  + d.getHours() 
-             + ':' + d.getMinutes() + ':' + d.getSeconds();
+	          
+	          setTime('retText', sele.timeRetrieved);
+	          setTime('checkText', sele.timeChecked);
+	          
 	       }else {
 	          document.getElementById('urlLink').href = '';
 	          document.getElementById('urlLink').textContent = '';
@@ -39,9 +38,15 @@
 	          document.getElementById('lockedText').textContent = '';
 	          document.getElementById('ignoredText').textContent = '';
 	          if(sele.length > 1) {
+	             //several items selected
+	             
+	             //If more than one item is selected and the times are within a second of each other
+	             //then we display the time, else display nothing.
+	             //Also display if there is a new version
 	             var timeRet = new Date(sele[0].timeRetrieved).getTime();
 	             var timeCheck = new Date(sele[0].timeChecked).getTime();
-	             var newVer = true;
+	             var sameVer = true;
+	             var newVer = sele[0].newVer;
 	             sele.forEach(function(item) {
 	                if(Math.abs(timeRet - new Date(item.timeRetrieved).getTime()) > 1000) {
                       timeRet = -1;
@@ -49,27 +54,28 @@
                    if(Math.abs(timeCheck - new Date(item.timeChecked).getTime()) > 1000) {
                       timeCheck = -1;
                    }
-                   newVer &= item.newVer;
+                   sameVer = newVer == item.ver;
 	             });
 	             
-	             document.getElementById('newVersionText'.textContent = newVer);
+	             //if all of the elements have the same newVer, then display it, else do not display.
+	             document.getElementById('newVersionText').textContent = sameVer ? newVer : '';
 	             
+	             //if different times
 	             if(timeRet > 0) {
-	                timeRet = new Date(sele[0].timeRetrieved);
-	                document.getElementById('retText').textContent = timeRet.getHours() 
-	                    + ':' + timeRet.getMinutes() + ':' + timeRet.getSeconds();
+	                setTime('retText', sele[0].timeRetrieved);
 	             }else {
 	                document.getElementById('retText').textContent = '';
 	             }
 	             
+	             
+	             //if different times
 	             if(timeCheck > 0) {
-	                timeCheck = new Date(sele[0].timeChecked);
-	                document.getElementById('checkText').textContent = timeCheck.getHours() 
-                        + ':' + timeCheck.getMinutes() + ':' + timeCheck.getSeconds();
+	                setTime('checkText', sele[0].timeChecked);
 	             }else {
 	                document.getElementById('checkText').textContent = '';
 	             }
 	          }else {
+	             //no items selected
 	             document.getElementById('retText').textContent = '';
 	             document.getElementById('checkText').textContent = '';
 	          }
@@ -103,7 +109,15 @@
          xmlhttp.send(JSON.stringify(getMode));
       }, false)
           
-	          
+      
+      //set the text content of the given element to hh:dd:ss format of the time given
+	   function setTime(elementName, time) {
+         var d = new Date(time);
+         document.getElementById(elementName).textContent = d.getHours() 
+         + ':' + d.getMinutes() + ':' + d.getSeconds();
+        }
+      
+        //invoked when the display button is pressed.
 	    function displayDetails() {
 	       var selected = document.getElementById('requestList').contentWindow.getSelectedIDs();
 	       if(selected.length == 1) {
@@ -238,25 +252,38 @@
        }
        
     </script>
+    
+    
+    
     <style type="text/css">
       html, body {height:95%;}
       span {float:left; margin:0;}
       a {float: left;}
+      table.mainTable {width:100%; height:100%;}
+      th.leftColumn {width:45%; height:100%;}
+      iframe {width:100%;}
+      iframe.reqList {height:100%;}
+      iframe.preview {height:70%;}
+      th.buttons {}
+      th.rightColumn {height:100%;}
     </style>
+    
+    
+    
   </head>
   <body>
   
-  <table width=100% height=100% id=mainTable>
+  <table class='mainTable' id=mainTable>
   <tr id="row1">
-      <th width=50% height=100% id="column1">
+      <th class="reqList" id="column1">
          <button type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)">Check Cache</button>
          <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)">Replace Cache</button>
-         <iframe src="./reqList" id="requestList" width=100% height=100% scrolling=auto></iframe>
+         <iframe class="reqList" src="./reqList" id="requestList" ></iframe>
       </th>
-      <th height=100%>
+      <th class="rightColumn">
          <table>
          <tr>
-            <th align="left">
+            <th class="buttons">
 	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
 	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
 	            <button type=button onclick="sendRequestList('toggleLock', onLock)">Toggle Lock</button>
@@ -284,7 +311,7 @@
 		          <option value="transcoder">Set transcoder</option>
 		         </select>
 		         <button type=button onclick="displayDetails()">Display</button> <br>
-               <iframe id=preview width=100% height=70%></iframe>
+               <iframe class="preview" id=preview></iframe>
       </th>
       
       </tr>

@@ -1,28 +1,27 @@
 var path = require('path');
 var fs = require('fs');
 var log = require('../ParrotAPI').logger;
+var lines;
 
 exports.transcode = function(body, params, entry) {
-   log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!1\n'  + body, 4);
+   //log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!1\n'  + body, 4);
    var javascript = strip(body);
    log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!2\n' + javascript, 4);
    javascript.forEach(function(part) {
+      var saveMe = part;
       part = addDummyVars(part);
-      var reporter = new traceur.util.ErrorReporter();
-      var sourceFile = new traceur.syntax.SourceFile("how now brown cow", part);
-      var results = traceur.codegeneration.Compiler.compileFile(reporter, sourceFile, 'TODO');
-      var output = traceur.codegeneration.ParseTreeWriter.write(results, false);
-      log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!3\n' + output, 4);
+      var output = traceur.codegeneration.ParseTreeWriter.write(traceur.codegeneration.Compiler.compileFile(new traceur.util.ErrorReporter(), new traceur.syntax.SourceFile(entry.id, part), entry.id), false);
+      //log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!3\n' + output, 4);
       
-      part = removeDummyVars(part);
-      log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!6\n' + part, 4);
       output = removeDummyVars(output);
-      body = replace(body, part, output);
-      log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!4\n' + body, 4);
+
+      //log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!4\n' + output, 4);
+      body = replace(body, saveMe, output);
+      //log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!5\n' + body, 4);
    });
    
    //entry.headers['X-SourceMap'] = //\whatever they want to put here.
-   log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!5\n' + body, 4);
+   log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!6\n' + body, 4);
    return body;
 };
 
@@ -30,13 +29,15 @@ exports.transcode = function(body, params, entry) {
 function strip(text) {
    //get all inline javascript
    //first remove all not-inline javascript to simplify
-   text = text.replace(new RegExp('<script (type="\w*")? src=\w*></script>', 'g'), '');
    //now split along all the script lines
-   //\detect type, so it doesn't bother with non-JS stuff
-   var splits = text.split('<script');
+   var splits = text.split(/<script (?!src=".*?")/);
+   
    var returnMe = [];
    //for each split, remove the end of the starting script tag and everything after the end of the script tag
-   splits.forEach(function(part) {
+   for(var i = 1; i < splits.length; i++) {
+      var part = splits[i];
+      
+      var type = part.match(new RegExp('type *= *"text/traceur"'));
       
       part = part.replace(new RegExp('[ "/=\\w]*>'), '');
       //also removes everything that doesn't end in </script>
@@ -44,21 +45,34 @@ function strip(text) {
       if(part.length > 0) {
          returnMe[returnMe.length] = part;
       }
-   });
+   }
    return returnMe;
 }
 
 function addDummyVars(text) {
-   text = 'var XMLHttpRequest = null;' + text;
-   text = 'var window = null;' + text;
-   text = 'var document = null;' + text;
+   var dummies = fs.readFileSync('./transcoders/traceur/dummyVariables', 'utf-8');
+   lines = dummies.split('\n');
+   
+   lines = lines.map(function(item) {
+     return item.trim(); 
+   });
+   
+   lines = lines.filter(function(item) {
+      return !item.match(/#/) && item.length > 0;
+   });
+   
+   lines.forEach(function(item) {
+         text = 'var ' + item.trim() + ' = null;\n' + text;
+   });
    return text;
 }
 
 function removeDummyVars(text) {
-   text = text.replace('var XMLHttpRequest = null;', '');
-   text = text.replace('var window = null;', '');
-   text = text.replace('var document = null;', '');
+   
+   lines.forEach(function(item) {
+         text = text.replace('var ' + item.trim() + ' = null;', '');
+   });
+
    return text;
 }
 
