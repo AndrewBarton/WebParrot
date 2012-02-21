@@ -12,28 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-console.log('dsiajdais');
 traceur.define('runtime', function() {
   'use strict';
 
   // TODO(arv): I stripped the resolvers to make this simpler for now.
-  var Parser = traceur.syntax.Parser;
-  var SourceFile = traceur.syntax.SourceFile
-  var ModuleAnalyzer = traceur.semantics.ModuleAnalyzer;
-  var ModuleSymbol = traceur.semantics.symbols.ModuleSymbol;
-  var Project = traceur.semantics.symbols.Project;
-
-  var ModuleTransformer = traceur.codegeneration.ModuleTransformer;
-  var ProgramTransformer = traceur.codegeneration.ProgramTransformer;
-  var ParseTreeWriter = traceur.codegeneration.ParseTreeWriter;
-  var ModuleRequireVisitor = traceur.codegeneration.module.ModuleRequireVisitor;
-
-  var canonicalizeUrl = traceur.util.canonicalizeUrl;
-  var resolveUrl = traceur.util.resolveUrl;
-  var ObjectMap = traceur.util.ObjectMap;
-  var ArrayMap = traceur.util.ArrayMap;
-
-  var assert = traceur.assert;
 
   // TODO(arv): Implement
   var base = Object.freeze(Object.create(null, {

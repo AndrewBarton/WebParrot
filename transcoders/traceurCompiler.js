@@ -28,7 +28,6 @@ exports.transcode = function(body, params, entry) {
 
 function strip(text) {
    //get all inline javascript
-   //first remove all not-inline javascript to simplify
    //now split along all the script lines
    var splits = text.split(/<script (?!src=".*?")/);
    

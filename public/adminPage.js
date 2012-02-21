@@ -6,7 +6,7 @@ var express = require('express');
 var app = parrotAPI.app;
 var fs = require('fs');
 var log = require('../ParrotLogger');
-
+var path = require('path');
 
 app.get('/admin(.html)?', function(req, res) {
    log.log('admin page request received', 3);
@@ -62,10 +62,10 @@ app.get('/parrotPreview.html', function (req, res) {
 });
 
 app.get('/traceur/:one/:two?/:three?', function (req, res) {
-   console.log(req.params.one + " " + req.params.two + " " + req.params.three);
-   var path = req.params.one + ((typeof req.params.two != undefined) ? '' : req.params.two);
-   path += ((typeof req.params.three != undefined) ? '' : req.params.three);
-   var returnMe = fs.readFileSync('./public/traceur/' + path, 'utf-8');
+   var filePath = req.params.one;
+   filePath = ((typeof req.params.two == "undefined") ? filePath : path.join(filePath, req.params.two));
+   filePath = ((typeof req.params.three == "undefined") ? filePath : path.join(filePath, req.params.three));
+   var returnMe = fs.readFileSync('./public/traceur/' + filePath, 'utf-8');
    res.send(returnMe);
 });
 

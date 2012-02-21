@@ -11,7 +11,7 @@ var log = require('./parrotLogger');
 var proxyPort = 9090;
 var defaultTranscoder = 'traceurCompiler';
 var entries = Object.create(null);
-var mode = require('./modes/translucent');
+var mode = require('./modes/Translucent');
 var strip = false;
 
 

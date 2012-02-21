@@ -7,24 +7,27 @@
       var date = new Date(Date.now());
       document.getElementById('clientLoadTime').textContent = "Client time at load is: " +  date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
    }
-      class Greeter {
-        constructor(message) {
-          this.message = message;
-        }
-
-        greet() {
-          let element = document.querySelector('#message');
-          element.textContent = this.message;
-        }
-      }
-
-      let greeter = new Greeter('Hello World!');
-      greeter.greet();
+      
     </script>
    
 </head>
 <body>
+
 <h1 id="message"></h1>
+<script type="text/javascript">
+class Greeter {
+   constructor(message) {
+     this.message = message;
+   }
+
+   greet() {
+     let element = document.querySelector('#message');
+     element.textContent = this.message;
+   }
+ }
+
+ let greeter = new Greeter('Hello World!');
+ greeter.greet();</script>
 <p>%PROXY</p>
 <p>Server time at load is:%DATE</p>
 <p id="clientLoadTime"></p>
