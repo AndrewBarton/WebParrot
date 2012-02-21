@@ -8,13 +8,13 @@ var fs = require('fs');
 var log = require('../parrotLogger');
 var path = require('path');
 
-app.get('/admin(.html)?', function(req, res) {
+app.get('/?admin(.html)?', function(req, res) {
    log.log('admin page request received', 3);
    var adminPage = fs.readFileSync('./public/admin.html', 'utf-8');
    res.send(adminPage);
 });
 
-app.get('/transcoder.html', function (req, res) {
+app.get('/?transcoder.html', function (req, res) {
 
    var transcoderPage = fs.readFileSync('./public/transcoder.html', 'utf8');
    var tempText = transcoderPage.replace('%SITE', decodeURIComponent(req.query.site));
@@ -23,7 +23,7 @@ app.get('/transcoder.html', function (req, res) {
    res.send(tempText);
 }); 
 
-app.get('/reqList', function(req, res) {
+app.get('/?reqList', function(req, res) {
    log.log('reqList request received', 3);
    var entries = parrotAPI.getCachedReqsuests();
    var listPage = fs.readFileSync('./public/list.html', 'utf-8');
@@ -55,13 +55,13 @@ app.get('/reqList', function(req, res) {
    
 });
 
-app.get('/parrotPreview.html', function (req, res) {
+app.get('parrotPreview.html', function (req, res) {
 
    var previewPage = fs.readFileSync('./public/parrotPreview.html', 'utf8');
    res.send(previewPage);
 });
 
-app.get('/traceur/:one/:two?/:three?', function (req, res) {
+app.get('/?traceur/:one/:two?/:three?', function (req, res) {
    var filePath = req.params.one;
    filePath = ((typeof req.params.two == 'undefined') ? filePath : path.join(filePath, req.params.two));
    filePath = ((typeof req.params.three == 'undefined') ? filePath : path.join(filePath, req.params.three));
@@ -70,6 +70,6 @@ app.get('/traceur/:one/:two?/:three?', function (req, res) {
 });
 
 app.get('/', function (req, res) {
-   console.log('admin page redirect received');
+   log.log('admin page redirect received', 3);
    res.redirect('/admin');
 });
