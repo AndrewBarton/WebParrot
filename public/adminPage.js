@@ -55,7 +55,7 @@ app.get('/?reqList', function(req, res) {
    
 });
 
-app.get('parrotPreview.html', function (req, res) {
+app.get('/?parrotPreview.html', function (req, res) {
 
    var previewPage = fs.readFileSync('./public/parrotPreview.html', 'utf8');
    res.send(previewPage);

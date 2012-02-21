@@ -2,7 +2,7 @@
   "author": "Andrew Barton <AndrewBBarton@gmail.com>",
   "name": "WebParrot",
   "description": "A selectively caching proxy for repeatable client testing",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/AndrewBarton/WebParrot",
   "repository": {
     "type": "git",
