@@ -357,7 +357,7 @@ function sendParrotResponse(parrotResponse, response) {
          //need to give the transcoder the entire body at once
          var body = transcode(parrotResponse);
          //if there was a problem during transcoding
-         if(typeof body != undefined) {
+         if(typeof body != 'undefined') {
             parrotResponse.headers['content-length'] = body.length;
             response.writeHead(parrotResponse.statusCode, parrotResponse.headers);
             response.write(body, 'binary');
@@ -509,7 +509,7 @@ function putKnockout(request) {
  */
 exports.cacheCheck = function(request, response, callback, force) {
    log.log('Cache check for: ' + request, 1);
-   force = (typeof force == undefined)? false:force;
+   force = (typeof force == 'undefined')? false:force;
    var entry = entries[request];
    
    var pathToUse = getPath(entry.request.url);

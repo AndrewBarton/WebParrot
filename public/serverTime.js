@@ -12,7 +12,6 @@ app.get('*demo*', function(req, res) {
    console.log('demo asked for');
    var date = new Date(Date.now());
    var temp = demoPage.replace('%DATE', date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds());
-   console.log(req.headers['from']);
    temp = temp.replace('%PROXY', req.headers['from'] == 'passed@through.com' ? 'Passed through proxy' : 'NOT passed through proxy');
    res.send(temp);
 });

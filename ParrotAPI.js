@@ -10,7 +10,7 @@ var app = parrot.app;
 
 exports.app = app;
 
-var apiPageUrl = "*api*";
+var apiPageUrl = "/api*";
 
 
 app.get('/', function(req, res) {

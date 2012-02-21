@@ -1,7 +1,7 @@
 exports.logLevel = 1;
 
 exports.log = function(message, level) {
-   level = (typeof level == undefined) ? 1 : level;
+   level = (typeof level == 'undefined') ? 1 : level;
    if(level <= exports.logLevel) {
       console.log(message);
    }
