@@ -15,6 +15,12 @@ var mode = require('./modes/Translucent');
 var strip = false;
 
 
+process.on('uncaughtException', function(err) {
+   console.log('\nCaught exception: ');
+   console.log(err.stack);
+   console.log('\nStill running though');
+});
+
 function parseArgs() {
    var args = process.argv;
    for(var i = 2; i < args.length; i++) {
