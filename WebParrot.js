@@ -47,10 +47,11 @@ function parseArgs() {
             proxyPort = args[i];
          }
       }
-      if(args[i] == '-d') {
+      if(args[i].toLowerCase() == '-defaulttranscoder') {
          i++;
          if(args[i]) {
-            exports.demoPort = args[i];
+            console.log(args[i]);
+            defaultTranscoder = args[i];
          }
       }
       if(args[i] == '-h' || args[i] == '?') {
@@ -431,7 +432,7 @@ function transcode(entry) {
       body += data.toString();
    });
    
-   var transcoderNames = entry.transcodeName.split(',');
+   var transcoderNames = entry.transcodeName.split(/[-,]/);
    transcoderNames.forEach(function(name) {
       var transcoder = require('./transcoders/' + name);
       //if the transcoder exists, since they are loaded at call time.
