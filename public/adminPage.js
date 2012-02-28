@@ -11,6 +11,8 @@ var path = require('path');
 app.get('/?admin(.html)?', function(req, res) {
    log.log('admin page request received', 3);
    var adminPage = fs.readFileSync('./public/admin.html', 'utf-8');
+   var mode = parrotAPI.getMode();
+   adminPage = adminPage.replace('%MODE', mode);
    res.send(adminPage);
 });
 
@@ -18,8 +20,14 @@ app.get('/?transcoder.html', function (req, res) {
 
    var transcoderPage = fs.readFileSync('./public/transcoder.html', 'utf8');
    var tempText = transcoderPage.replace('%SITE', decodeURIComponent(req.query.site));
-   tempText = tempText.replace('%NAME', parrotAPI.getCachedRequest(req.query.site).transcodeName);
-   tempText = tempText.replace('%PARAMS', JSON.stringify(parrotAPI.getCachedRequest(req.query.site).transcodeParams));
+   if(decodeURIComponent(req.query.site) == 'DEFAULT') {
+      tempText = tempText.replace('%NAME', parrotAPI.getDefaultTranscoder());
+      tempText = tempText.replace('%PARAMS', JSON.stringify(parrotAPI.getDefaultTranscoderParams()));
+   }else {
+      tempText = tempText.replace('%NAME', parrotAPI.getCachedRequest(req.query.site).transcodeName);
+      tempText = tempText.replace('%PARAMS', JSON.stringify(parrotAPI.getCachedRequest(req.query.site).transcodeParams));
+   }
+   
    res.send(tempText);
 }); 
 
@@ -46,7 +54,7 @@ app.get('/?reqList', function(req, res) {
       propString += 'props["' + entry.request.url + entry.hash + '"] =' + JSON.stringify(prop) + '\n';
       totalString += '<li class="ui-selectee" id= "' + entry.request.url + entry.hash;
       
-      totalString += '">' + entry.request.url + "     " + entry.hash;
+      totalString += '">' + entry.request.url + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Request Contents Hash:' + entry.hash;
       totalString += '</li>\n';
    }
    totalString += '</ul> \n</body> \n</html>';

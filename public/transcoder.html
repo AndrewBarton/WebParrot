@@ -6,10 +6,14 @@
   <head>
     <title>Web Parrot Transcoder page</title>
      <script  type="text/javascript">
+     
+     
      var site = '%SITE';
      var currentName = '%NAME';
      var currentParams = %PARAMS;
      var url = 'http://' + document.URL.split('/')[2] + '/api';
+     
+     
      function sendTranscoder() {
         var text = document.getElementById('transcoderParamsArea').value
         var entry = Object.create(null);
@@ -30,6 +34,7 @@
      }
      
      window.addEventListener('load', function() {
+        document.getElementById('header').textContent = 'Transcoder settings for ' + site;
         document.getElementById('transcoderNameArea').value = currentName;
         if(currentParams) {
            var params = JSON.stringify(currentParams);
@@ -39,9 +44,12 @@
         }
        
      });
+     
+     
      </script>
   </head>
   <body>
+  <h3 id="header"></h1>
   <p>Transcoder name (multiple separated by hyphens):</p>
   <textarea rows="0" cols="50" id='transcoderNameArea'></textarea>
   <p>Parameters (in JSON):</p>

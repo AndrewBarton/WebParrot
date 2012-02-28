@@ -10,6 +10,7 @@ var log = require('./parrotLogger');
 
 var proxyPort = 9090;
 var defaultTranscoder = 'traceurCompiler';
+var defaultParameters = null;
 var entries = Object.create(null);
 var mode = require('./modes/Translucent');
 var strip = false;
@@ -21,50 +22,6 @@ process.on('uncaughtException', function(err) {
    console.log('\nStill running though');
 });
 
-function parseArgs() {
-   var args = process.argv;
-   for(var i = 2; i < args.length; i++) {
-      if(args[i] == '-v') {
-         i++;
-         if(args[i]) {
-            log.logLevel = args[i];
-         }
-         
-      }
-      if(args[i] == '-m') {
-         i++;
-         mode = require('./modes/' + args[i]);
-      }
-      if(args[i] == '-w') {
-         i++;
-         if(args[i]) {
-            exports.webPort = args[i];
-         }
-      }
-      if(args[i] == '-p') {
-         i++;
-         if(args[i]) {
-            proxyPort = args[i];
-         }
-      }
-      if(args[i].toLowerCase() == '-defaulttranscoder') {
-         i++;
-         if(args[i]) {
-            console.log(args[i]);
-            defaultTranscoder = args[i];
-         }
-      }
-      if(args[i] == '-h' || args[i] == '?') {
-         var fs = require('fs');
-         
-         console.log(fs.readFileSync('./cmdHelp', 'utf-8'));
-         process.exit(0);
-      }
-      if(args[i] == '-strip') {
-         strip = true;
-      }
-   }
-}
 
 
 
@@ -104,7 +61,7 @@ function requestBegin(request, response, next) {
          newCache:false,
          cacheChecked:false,
          transcodeName:defaultTranscoder,
-         transcodeParams:null,
+         transcodeParams:defaultParameters,
          timeRetrieved:new Date(),
          timeChecked:new Date()};
    
@@ -119,7 +76,7 @@ function requestBegin(request, response, next) {
    
    if(portToUse == proxyPort) {
       if(!pathToUse.match('/demo') || currentEntry.request.headers.from == 'passed@through.com') {
-
+         log.log('passing request to API:' + request.url, 3);
          next();
          return;
       }else {
@@ -559,7 +516,7 @@ exports.cacheCheck = function(request, response, callback, force) {
             if(proxyResponse.statusCode !='304' || force || !equal) {
                entry.newCache = true;
                entry.newHeaders = proxyResponse.headers;
-               entry.newData = [];
+               entry.newData = newData;
                entry.timeChecked = new Date();
             }else {
                request.newCache = false;
@@ -595,17 +552,18 @@ exports.cacheReplace = function(request, response) {
    exports.cacheCheck(request, response, function(updated) {
       //if there was a new page, set it in and respond to the client to update itself.
       var sendMe = {id:entries[request].id, updated:true, time:new Date()};
+      
       if(updated) {
-         request = entries[request];
-         request.headers = request.newHeaders;
-         request.newHeaders = null;
-         request.data = request.newData;
-         request.newData = [];
-         request.newCache = false;
-         request.cacheCheck = false;
+         var entry = entries[request];
+         entry.headers = entry.newHeaders;
+         entry.newHeaders = null;
+         entry.data = entry.newData;
+         entry.newData = [];
+         entry.newCache = false;
+         entry.cacheCheck = false;
          entry.timeRetrieved = new Date();
          entry.timeChecked = new Date();
-         
+        
       }else {
          sendMe.updated = false;
          entry.timeChecked = new Date();
@@ -686,7 +644,7 @@ exports.getMode = function() {
 
 
 /**
- * 
+ *  Sets the mode to the given mode by file name
  * @param newMode
  */
 exports.setMode = function(newMode) {
@@ -716,6 +674,32 @@ exports.setTranscode = function(ID, name, params) {
 };
 
 
+
+
+/**
+ * 
+ * @returns {String} The default transcoders
+ */
+exports.getDefaultTranscoder = function() {
+   return defaultTranscoder;
+};
+
+
+
+
+
+/**
+ * 
+ * @returns The default transcoder parameters.
+ */
+exports.getDefaultTranscoderParams = function() {
+   return defaultParameters;
+};
+
+
+/**
+ * Every module needs to use the same logger in order to use the same logging level.
+ */
 exports.logger = log;
 
 
@@ -756,6 +740,78 @@ function getPort(host) {
    }
    return portToUse;
 }
+
+/**
+ * Parses arguments and sets the values accordingly.
+ */
+function parseArgs() {
+   var args = process.argv;
+   for(var i = 2; i < args.length; i++) {
+      if(args[i] == '-v') {
+         i++;
+         if(args[i]) {
+            log.logLevel = args[i];
+         }
+         
+      }
+      if(args[i] == '-m') {
+         i++;
+         mode = require('./modes/' + args[i]);
+      }
+      if(args[i] == '-w') {
+         i++;
+         if(args[i]) {
+            exports.webPort = args[i];
+         }
+      }
+      if(args[i] == '-p') {
+         i++;
+         if(args[i]) {
+            proxyPort = args[i];
+         }
+      }
+      if(args[i].toLowerCase() == '-defaulttranscoder') {
+         i++;
+         if(args[i]) {
+            log.log('Default transcoders set to: ' + args[i], 1);
+            defaultTranscoder = args[i];
+         }
+      }
+      if(args[i].toLowerCase() == '-defaultparameters') {
+         i++;
+         if(args[i]) {
+            defaultParameters = parseParameters(args[i]);
+         }
+      }
+      if(args[i] == '-h' || args[i] == '?') {
+         var fs = require('fs');
+         
+         console.log(fs.readFileSync('./cmdHelp', 'utf-8'));
+         process.exit(0);
+      }
+      if(args[i] == '-strip') {
+         strip = true;
+      }
+   }
+}
+
+/**
+ * 
+ * @param paras The string containing the command line formatted parameters
+ * @returns An object containing the default parameters
+ */
+function parseParameters(paras) {
+   var parts = paras.split('-');
+   var json = '{';
+   parts.forEach(function(part) {
+      var subParts = part.split(':');
+      json += '"' + subParts[0] + '":"' + subParts[1] + '",';
+   });
+   json = json.substring(0, json.length-1);
+   json += '}';
+   return JSON.parse(json);
+}
+
 
 
 //need to use the body parser

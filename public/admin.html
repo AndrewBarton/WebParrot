@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
 
 <!--   Copyright Andrew Barton andrewbbarton@gmail.com,  2012
        http://www.opensource.org/licenses/MIT, see LICENSE -->
@@ -9,9 +9,11 @@
      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script type="text/javascript">
 	    var url = 'http://' + document.URL.split('/')[2] + '/api';
+	    var selectEntryText = 'Select a cache entry';
           
        //update the text shown on the right
        var displayOverview = function(event, ui) {
+          displayDetails();
 	       var sele = document.getElementById('requestList').contentWindow.getSelected();
 	       //if there are mutliple selected then this function doesn't make sense
 	       if(sele.length == 1) {
@@ -31,7 +33,7 @@
 	          
 	       }else {
 	          document.getElementById('urlLink').href = '';
-	          document.getElementById('urlLink').textContent = '';
+	          document.getElementById('urlLink').textContent = selectEntryText;
 	          document.getElementById('statusCodeText').textContent = '';
 	          document.getElementById('expiresText').textContent = '';
 	          document.getElementById('etagText').textContent = '';
@@ -86,28 +88,17 @@
         
         //on window load bind the function for displaying the overview to the list of selectables in list.
       window.addEventListener('load', function() {
-         document.getElementById('requestList').contentWindow.bindMe(displayOverview)
          
          document.getElementById('requestList').contentWindow.bindMe(displayOverview);
-         var xmlhttp=new XMLHttpRequest();
-         
-         xmlhttp.onreadystatechange = function() {
-            if(xmlhttp.readyState == 4) {
-               if(xmlhttp.responseText == 'opaque') {
-                  document.getElementById('modeSelector').selectedIndex = 2;
-               }else if (xmlhttp.responseText == 'transparent') {
-                  document.getElementById('modeSelector').selectedIndex = 1;
-               }else {
-                  document.getElementById('modeSelector').selectedIndex = 0;
-               }
-            }
+         var mode = '%MODE';
+         if(mode == 'opaque') {
+            document.getElementById('modeSelector').selectedIndex = 2;
+         }else if (mode == 'transparent') {
+            document.getElementById('modeSelector').selectedIndex = 1;
+         }else {
+            document.getElementById('modeSelector').selectedIndex = 0;
          }
-        
-         var getMode = {getMode:'unknown'};
-         xmlhttp.open("POST", url, true);
-         xmlhttp.setRequestHeader('Content-Type', "application/json");
-         xmlhttp.send(JSON.stringify(getMode));
-      }, false)
+      }, false);
           
       
       //set the text content of the given element to hh:dd:ss format of the time given
@@ -120,8 +111,9 @@
         //invoked when the display button is pressed.
 	    function displayDetails() {
 	       var selected = document.getElementById('requestList').contentWindow.getSelectedIDs();
+	       var renderMode = document.getElementById('displayType').value
 	       if(selected.length == 1) {
-	           var renderMode = document.getElementById('displayType').value
+	           
 	           if(renderMode == 'responseRender') {
 	              var prop = document.getElementById('requestList').contentWindow.getSelected();
 	              document.getElementById('preview').src = prop[0].url;
@@ -136,6 +128,10 @@
 	              sendRequestList(renderMode, onDisplayDetail);
 	           }
 	           
+	       }else {
+	          if(renderMode == 'transcoder') {
+	             document.getElementById('preview').src = './transcoder.html?site=DEFAULT';
+	          }
 	       }
 	    }
     
@@ -245,10 +241,15 @@
                }else {
                   document.getElementById('preview').onload = function() {
                      document.getElementById('preview').contentWindow.setContent(content);
+                     document.getElementById('preview').onload = null;
                      };
                 }
                
           }
+       }
+       
+       function refreshList() {
+          document.getElementById('requestList').src = document.getElementById('requestList').src;
        }
        
     </script>
@@ -276,26 +277,33 @@
   <table class='mainTable' id=mainTable>
   <tr id="row1">
       <th class="reqList" id="column1">
-         <button type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)">Check Cache</button>
-         <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)">Replace Cache</button>
+         <button type=button onclick="refreshList()"
+            title="Refresh the list of cache entries">Refresh List</button>
+         <button type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)" 
+            title="Check if there is a new version of this page on the origin server">Check Cache</button>
+         <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)" 
+            title="Update the cache from the origin server">Update Cache</button>
          <iframe class="reqList" src="./reqList" id="requestList" ></iframe>
       </th>
       <th class="rightColumn">
          <table>
          <tr>
             <th class="buttons">
-	            <button type=button onclick="sendRequestList('removeRequest', onRemove)">Remove Request</button>
-	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)">Toggle Ignore</button>
-	            <button type=button onclick="sendRequestList('toggleLock', onLock)">Toggle Lock</button>
+	            <button type=button onclick="sendRequestList('removeRequest', onRemove)"
+	                 title="Remove all records of this page">Remove Request</button>
+	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)"
+	                 title="Do not cache the selected page">Toggle Ignore</button>
+	            <button type=button onclick="sendRequestList('toggleLock', onLock)" 
+	                 title="Lock a page so it is not replaced in the cache">Toggle Lock</button>
 	            <select id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
-	              <option id=opaque>Opaque</option>
+	              <option id="opaque">Opaque</option>
 	            </select>
             </th>
          </tr>
          </table>
-               <span>URL:</span><a id=urlLink></a><br>
+               <span>URL:</span><a id=urlLink>Select a cache entry</a><br>
                <span>Status code:</span><span id="statusCodeText"></span><br>
                <span>ETag:</span><span id="etagText"></span><br>
                <span>Expires:</span><span id="expiresText"></span><br>
@@ -304,13 +312,12 @@
                <span>Time retrieved:</span><span id="retText"></span><br>
                <span>Time checked:</span><span id="checkText"></span><br>
                <span>New version:</span><span id="newVersionText"></span><br>
-		         <select id="displayType">
+		         <select id="displayType" onchange="displayDetails()">
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>
 		          <option value="requestSource">Request source</option>
 		          <option value="transcoder">Set transcoder</option>
 		         </select>
-		         <button type=button onclick="displayDetails()">Display</button> <br>
                <iframe class="preview" id=preview></iframe>
       </th>
       

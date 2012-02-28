@@ -31,6 +31,8 @@ app.get('/', function(req, res) {
    
 app.post(apiPageUrl, function(req, res) {
       var contents = req.body;
+
+      log.log('API post receieved: ' + contents.toString(), 3);
       if(contents.removeRequest) {
          for(var i = 0; i < contents.removeRequest.length; i++) {
             parrot.removeReq(contents.removeRequest[i]);
@@ -88,7 +90,11 @@ app.post(apiPageUrl, function(req, res) {
       
       if(contents.setTranscoder) {
          var transcodes = contents.setTranscoder;
-         parrot.setTranscode(transcodes.url, transcodes.name, transcodes.params);
+         if(transcoder.url == 'DEFAULT') {
+            parrot.setDefaultTranscoder(transcodes.name, transcodes.params);
+         }else {
+            parrot.setTranscode(transcodes.url, transcodes.name, transcodes.params);
+         }
          res.send();
       }
       
@@ -101,6 +107,14 @@ exports.getCachedReqsuests = function () {
 
 exports.getCachedRequest = function (ID) {
    return parrot.getReqs()[ID];
+};
+
+exports.getDefaultTranscoder = function () {
+  return parrot.getDefaultTranscoder(); 
+};
+
+exports.getDefaultTranscoderParams = function () {
+   return parrot.getDefaultTranscoderParams();
 };
 
 exports.getMode =  function () {

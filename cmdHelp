@@ -1,5 +1,6 @@
 
-usage: nodejs WebParrot.js [-p proxyPort][-v verbosityLevel][-m starting mode][-strip][-defaultTranscoder newDefault]
+usage: nodejs WebParrot.js [-p proxyPort][-v verbosityLevel][-m starting mode][-strip]
+   [-defaultTranscoder newDefault1-newDefault2][defaultParameters name1:value1-name2:value2]
 
 -p <proxyPort>: The port to send proxy traffic through. Default 9090
 -v <0-3>: How many messages the parrot will log. Default 1
@@ -15,3 +16,5 @@ usage: nodejs WebParrot.js [-p proxyPort][-v verbosityLevel][-m starting mode][-
          Use this if you are experiencing issues related to your browser caching responses.
 -defaultTranscoder: a transcoder to use as the default instead of traceurCompiler. Multiple transcoders can
          be given separated by hyphens. [transcoder1-transcoder2-...]
+-defaultParamaters: The parameters to be passed to the transcoder by default. 
+         Note the odd formatting (darn you command line!).
