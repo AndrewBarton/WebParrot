@@ -467,8 +467,6 @@ exports.cacheCheck = function(request, response, callback, force) {
    force = (typeof force == 'undefined')? false:force;
    var entry = entries[request];
    
-   var pathToUse = getPath(entry.request.url);
-   var portToUse = getPort(entry.request.headers.host);
    var requestHeaders = entry.request.headers;
    if(entry.request.method.toLowerCase() != 'get') {
       return;
@@ -481,11 +479,8 @@ exports.cacheCheck = function(request, response, callback, force) {
       requestHeaders['If-Modified-Since'] = entry.headers.expires;
    }
    
-   var options = {headers:requestHeaders,
-                  hostname:entry.request.headers.host.replace(new RegExp(':.*'), ''),
-                  port:portToUse,
-                  path:pathToUse
-                  };
+   var options = urlMod.parse(entry.request.url);
+   options.headers = entry.request.headers;
    var proxyRequest = http.request(options);
    var newData = [];
    //add the listener for the response from the server
