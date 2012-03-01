@@ -1,6 +1,8 @@
 var path = require('path');
 var fs = require('fs');
-var log = require('../ParrotAPI').logger;
+
+var api = require('../ParrotAPI');
+var log = api.logger;
 var lines;
 var utils = require('./utils');
 /**
@@ -11,13 +13,45 @@ var utils = require('./utils');
  * @returns The new body.
  */
 exports.transcode = function(body, params, entry) {
+   if(entry.id.match('sourceMap[0-9]*=yes')) {
+      return body;
+   }
+   
    log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!1\n'  + body, 4);
    var javascript = utils.getScripts(body);
    log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!2\n' + javascript, 4);
-   javascript.forEach(function(part) {
+   for(var i = 0; i < javascript.length; i++) {
+      var part = javascript[i];
       var saveMe = part;
       part = addDummyVars(part);
-      var output = traceur.codegeneration.ParseTreeWriter.write(traceur.codegeneration.Compiler.compileFile(new traceur.util.ErrorReporter(), new traceur.syntax.SourceFile(entry.id, part), entry.id), false);
+      var sourceFile = new traceur.syntax.SourceFile(entry.id, part);
+      var project = new traceur.semantics.symbols.Project(entry.id);
+      project.addFile(sourceFile);
+      var reporter = new traceur.util.ErrorReporter();
+      var res = traceur.codegeneration.Compiler.compile(reporter, project, false);
+      var sourceMapGenerator = new traceur.codegeneration.sourceMap.SourceMapGenerator({file: 'traceured.js'});
+      var options = {sourceMapGenerator: sourceMapGenerator};
+      var output = traceur.codegeneration.ProjectWriter.write(res, options);
+      
+      var entries = api.getCachedReqsuests();
+      var newUrl = entry.request.url;
+      if(newUrl.match('\\?')) {
+         newUrl += '&sourceMap' + i + '=yes';
+      }else {
+         newUrl += '?sourceMap' + i + '=yes';
+      }
+      newUrl += '0';
+      entries[newUrl] = Object.create(entry);
+      entries[newUrl].request = {};
+      for(var x in entry.request) {
+         entries[newUrl].request[x] = entry.request[x];
+      }
+      
+      entries[newUrl].request.url = newUrl;
+      var newData = [options.sourceMap];
+      entries[newUrl].data = newData;
+      entries[newUrl].id = newUrl;
+      entries[newUrl].isSourceMap = true;
       log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!3\n' + output, 4);
       
       output = removeDummyVars(output);
@@ -25,9 +59,9 @@ exports.transcode = function(body, params, entry) {
       log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!4\n' + output, 4);
       body = utils.replaceText(body, saveMe, output);
       log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!5\n' + body, 4);
-   });
+   }
    
-   //entry.headers['X-SourceMap'] = //\whatever they want to put here.
+   entry.headers['X-SourceMap'] = entry.request.url;
    log.log('!!!!!!!!!!!!!!!!!!!!!!!!!!6\n' + body, 4);
    return body;
 };
@@ -109,3 +143,4 @@ function importScript(filename) {
 global.importScript = importScript;
 
 importScript('./traceur.js');
+importScript('./traceurSourceMaps.js');

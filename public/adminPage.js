@@ -39,23 +39,27 @@ app.get('/?reqList', function(req, res) {
    var propString = '';
    for(req in entries) {
       entry = entries[req];
-      var prop = {
-            url:entry.request.url,
-            lock:entry.lock,
-            ignore:entry.ignore,
-            etag:entry.headers.etag,
-            status:entry.statusCode,
-            expires:entry.headers.expires,
-            cacheChecked:entry.cacheChecked,
-            newVer:entry.newCache,
-            timeRetrieved:entry.timeRetrieved,
-            timeChecked:entry.timeChecked,
-      };
-      propString += 'props["' + entry.request.url + entry.hash + '"] =' + JSON.stringify(prop) + '\n';
-      totalString += '<li class="ui-selectee" id= "' + entry.request.url + entry.hash;
+      if(!entry.request.url.match('sourceMap[0-9]*=yes')) {
+         var prop = {
+               url:entry.request.url,
+               hash:entry.hash,
+               lock:entry.lock,
+               ignore:entry.ignore,
+               etag:entry.headers.etag,
+               status:entry.statusCode,
+               expires:entry.headers.expires,
+               cacheChecked:entry.cacheChecked,
+               newVer:entry.newCache,
+               timeRetrieved:entry.timeRetrieved,
+               timeChecked:entry.timeChecked,
+         };
+         propString += 'props["' + entry.request.url + entry.hash + '"] =' + JSON.stringify(prop) + '\n';
+         totalString += '<li class="ui-selectee" id= "' + entry.request.url + entry.hash;
+         
+         totalString += '">' + entry.request.url;
+         totalString += '</li>\n';
+      }
       
-      totalString += '">' + entry.request.url + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Request Contents Hash:' + entry.hash;
-      totalString += '</li>\n';
    }
    totalString += '</ul> \n</body> \n</html>';
    totalString = totalString.replace('REPLACEME', propString);

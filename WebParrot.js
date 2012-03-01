@@ -6,7 +6,7 @@ var http = require('http');
 var express = require('express');
 var crypto = require('crypto');
 var log = require('./parrotLogger');
-
+var urlMod = require('url');
 
 var proxyPort = 9090;
 var defaultTranscoder = 'traceurCompiler';
@@ -42,8 +42,9 @@ log.log('Proxy running on port: ' + proxyPort, 0);
  */
 function requestBegin(request, response, next) {
    log.log('request received: ' + request.url, 3);
-   
    //I'M A HACK, REMOVE ME!!!
+   //if a reuqest is proxied, then it has the whole http part infront
+   //else it does not, this slices off the / so we don't end up with /http://blah
    request.url = request.url.slice(1);
    var currentEntry = { request : request,
          reqData: [],
@@ -63,7 +64,8 @@ function requestBegin(request, response, next) {
          transcodeName:defaultTranscoder,
          transcodeParams:defaultParameters,
          timeRetrieved:new Date(),
-         timeChecked:new Date()};
+         timeChecked:new Date()
+   };
    
    var mdSum = crypto.createHash('md5');
    
@@ -71,11 +73,11 @@ function requestBegin(request, response, next) {
       delete currentEntry.request.headers['if-none-satch'];
       delete currentEntry.request.headers['if-modified-since'];
    }
-   var portToUse = getPort(request.headers.host);
-   var pathToUse = getPath(request.url);
    
-   if(portToUse == proxyPort) {
-      if(!pathToUse.match('/demo') || currentEntry.request.headers.from == 'passed@through.com') {
+   var parsedUrl = urlMod.parse('http://' + request.headers.host);
+   //if the request is addressed to our server, and is not the demo with a query string attached.
+   if(parsedUrl.port == proxyPort) {
+      if((!request.url.match('demo') || currentEntry.request.headers.from == 'passed@through.com')  && !urlMod.parse(request.url).query) {
          log.log('passing request to API:' + request.url, 3);
          next();
          return;
@@ -140,8 +142,8 @@ function canTranscode(entry) {
    if(entry.statusCode != 304) {
       return (entry.transcodeName != ''
          && (!entry.headers['content-encoding'] || entry.headers['content-encoding'].search('gzip') == -1)
-         && (entry.headers['content-type'].search('javascript') != -1
-         || entry.headers['content-type'].search('text') != -1));
+         && ( entry.headers['content-type'] && (entry.headers['content-type'].search('javascript') != -1
+         || entry.headers['content-type'].search('text') != -1)));
    }else {
       return false;
    }
@@ -166,14 +168,8 @@ function canTranscode(entry) {
  * @param currentEntry data on the current request
  */
 function noEntry(request, response, currentEntry) {
-   var portToUse = getPort(request.headers.host);
-   var pathToUse = getPath(request.url);
-   
-   var options = {headers:request.headers,
-         hostname:request.headers.host.replace(new RegExp(':.*'), ''),
-         port:portToUse,
-         path:pathToUse
-         };
+   var options = urlMod.parse(request.url);
+   options.headers = request.headers;
    var proxyRequest = http.request(options);
    //make the request to send to the server
    
@@ -426,15 +422,10 @@ function putKnockout(request) {
    }else {
       var entry = entries[request.url + '0'];
    }
-   var pathToUse = getPath(request.url);
-   var portToUse = getPort(request.headers.host);
-   var requestHeaders = request.headers;
+   var options = urlMod.parse(request.url);
+   options.headers = request.headers;
    
-   var options = {headers:requestHeaders,
-                  hostname:requestHeaders.host.replace(new RegExp(':.*'), ''),
-                  port:portToUse,
-                  path:pathToUse
-                  };
+   
    var proxyRequest = http.request(options);
    //add the listener for the response from the server
    proxyRequest.addListener('response', function(proxyResponse) {
@@ -702,44 +693,6 @@ exports.getDefaultTranscoderParams = function() {
  */
 exports.logger = log;
 
-
-
-/**
- * Returns the path of the given URL
- * @param url
- * @returns
- */
-function getPath(url) {
-   if(url.length < 7) {
-      return url;
-   }
-   var pathToUse = url.slice(7);
-   if(pathToUse.indexOf('/') != -1) {
-
-      pathToUse = pathToUse.slice(pathToUse.search('/'));
-   }else {
-      pathToUse = '';
-   }
-   return pathToUse;
-}
-
-
-
-
-
-
-/**
- * returns the port of the given host, or 80 if none specified
- * @param host
- * @returns {Number}
- */
-function getPort(host) {
-   var portToUse = 80;
-   if(host.indexOf(':') != -1) {
-      portToUse = host.slice(host.indexOf(':')+1);
-   }
-   return portToUse;
-}
 
 /**
  * Parses arguments and sets the values accordingly.

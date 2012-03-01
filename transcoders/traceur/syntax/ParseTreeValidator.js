@@ -88,7 +88,7 @@ traceur.define('syntax', function() {
       throw Error('Parse tree validation failure \'' + e.message + '\' at ' +
           locationString +
           ':\n\n' +
-          ParseTreeWriter.write(tree, e.tree, true) +
+          ParseTreeWriter.write(tree, {highlighted: e.tree, showLineNumbers: true}) +
           '\n');
     }
   };

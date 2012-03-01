@@ -50,10 +50,6 @@
    */
   function mkdirRecursive(dir) {
     var parts = path.normalize(dir).split('/');
-    if(dir.indexOf('/') < 0) {
-      parts = path.normalize(dir).split('\\');
-   }
-    
 
     dir = '';
     for (var i = 0; i < parts.length; i++) {
@@ -64,6 +60,21 @@
     }
   }
 
+  /**
+   * Removes the common prefix of basedir and filedir from filedir
+   * @param {string} basedir
+   * @param {string} filedir
+   */
+  function removeCommonPrefix(basedir, filedir) {
+    var baseparts = basedir.split('/');
+    var fileparts = filedir.split('/');
+
+    var i = 0;
+    while (i < fileparts.length && fileparts[i] === baseparts[i]) {
+      i++;
+    }
+    return fileparts.slice(i).join('/');
+  }
 
   function compileFiles(filenames) {
     var reporter = new traceur.util.ErrorReporter();
@@ -98,19 +109,14 @@
     results.keys().forEach(function(file) {
       var tree = results.get(file);
       var filename = file.name;
-      var result = traceur.codegeneration.ParseTreeWriter.write(tree, false);
+      var result = traceur.codegeneration.ParseTreeWriter.write(tree, {showLineNumbers: false});
 
       // Compute the output path
       var outputdir = fs.realpathSync(process.cwd());
       var filedir = fs.realpathSync(path.dirname(filename));
-     
-      filedir = path.relative(outputdir, filedir);
-     //remove any '../' and '..\' from the relative directory
-     filedir = filedir.replace(new RegExp(/\.\.[\\\/]/g), '');
-     
-     
+      filedir = removeCommonPrefix(outputdir, filedir);
       outputdir = path.join(outputdir, 'out', filedir);
-     
+
       mkdirRecursive(outputdir);
       var outputfile = path.join(outputdir, path.basename(filename));
       fs.writeFileSync(outputfile, new Buffer(result));

@@ -27,6 +27,7 @@
 	          document.getElementById('ignoredText').textContent = sele.ignore;
 	          document.getElementById('etagText').textContent = sele.etag;
 	          document.getElementById('newVersionText').textContent = sele.newVer;
+	          document.getElementById('reqContentsHash').textContent = sele.hash;
 	          
 	          setTime('retText', sele.timeRetrieved);
 	          setTime('checkText', sele.timeChecked);
@@ -39,6 +40,7 @@
 	          document.getElementById('etagText').textContent = '';
 	          document.getElementById('lockedText').textContent = '';
 	          document.getElementById('ignoredText').textContent = '';
+	          document.getElementById('reqContentsHash').textContent = sele.hash;
 	          if(sele.length > 1) {
 	             //several items selected
 	             
@@ -312,6 +314,7 @@
                <span>Time retrieved:</span><span id="retText"></span><br>
                <span>Time checked:</span><span id="checkText"></span><br>
                <span>New version:</span><span id="newVersionText"></span><br>
+               <span>Request Contents Hash:</span><span id="reqContentsHash"></span><br>
 		         <select id="displayType" onchange="displayDetails()">
 		          <option value="responseRender">Response render</option>
 		          <option value="responseSource">Response source</option>

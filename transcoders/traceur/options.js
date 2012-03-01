@@ -267,6 +267,7 @@
   addFeatureOption('propertyNameShorthand', Kind.experimental);
   addFeatureOption('propertyOptionalComma', Kind.experimental);
   addFeatureOption('traceurClasses', Kind.experimental);
+  addFeatureOption('sourceMaps', Kind.experimental);
 
   addBoolOption('debug');
   addBoolOption('freeVariableChecker');

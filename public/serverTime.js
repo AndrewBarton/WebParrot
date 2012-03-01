@@ -8,7 +8,7 @@ var demoPage = "";
 function onStarterRead(err, data) {
    demoPage = data;
 }
-app.get('*demo*', function(req, res) {
+app.get('/?demo', function(req, res) {
    console.log('demo asked for');
    var date = new Date(Date.now());
    var temp = demoPage.replace('%DATE', date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds());
