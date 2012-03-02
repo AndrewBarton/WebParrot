@@ -13,7 +13,7 @@ var utils = require('./utils');
  * @returns The new body.
  */
 exports.transcode = function(body, params, entry) {
-   if(entry.id.match('sourceMap[0-9]*=yes')) {
+   if(entry.isSourceMap) {
       return body;
    }
    
@@ -46,8 +46,13 @@ exports.transcode = function(body, params, entry) {
       for(var x in entry.request) {
          entries[newUrl].request[x] = entry.request[x];
       }
-      
+      entries[newUrl].request.headers = {};
+      for(var x in entry.request.headers) {
+         entries[newUrl].request.headers[x] = entry.request.headers[x];
+      }
       entries[newUrl].request.url = newUrl;
+
+      delete entries[newUrl].request.headers.from;
       var newData = [options.sourceMap];
       entries[newUrl].data = newData;
       entries[newUrl].id = newUrl;

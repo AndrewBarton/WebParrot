@@ -39,7 +39,7 @@ app.get('/?reqList', function(req, res) {
    var propString = '';
    for(req in entries) {
       entry = entries[req];
-      if(!entry.request.url.match('sourceMap[0-9]*=yes')) {
+      if(!entry.isSourceMap) {
          var prop = {
                url:entry.request.url,
                hash:entry.hash,

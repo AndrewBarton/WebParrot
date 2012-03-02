@@ -262,49 +262,42 @@
       html, body {height:95%;}
       span {float:left; margin:0;}
       a {float: left;}
-      table.mainTable {width:100%; height:100%;}
-      th.leftColumn {width:45%; height:100%;}
-      iframe {width:100%;}
-      iframe.reqList {height:100%;}
-      iframe.preview {height:70%;}
-      th.buttons {}
-      th.rightColumn {height:100%;}
+      iframe.reqList {width:100%; height:100%;}
+      iframe.preview {width:46%; float:left; height:400px}
+      div.leftColumn {float:left; margin:10px; width:50%; height:95%}
+      div.rightColumn{}
+      .listButton{float:left}
+      .entryButton{float:left}
     </style>
     
     
     
   </head>
   <body>
-  
-  <table class='mainTable' id=mainTable>
-  <tr id="row1">
-      <th class="reqList" id="column1">
-         <button type=button onclick="refreshList()"
+   <div class="leftColumn" id="leftColumn">
+         <button class="listButton" type=button onclick="refreshList()"
             title="Refresh the list of cache entries">Refresh List</button>
-         <button type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)" 
+         <button class="listButton" type=button onclick="sendRequestList('cacheCheck', onCacheUpdate, true)" 
             title="Check if there is a new version of this page on the origin server">Check Cache</button>
-         <button type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)" 
+         <button class="listButton" type=button onclick="sendRequestList('cacheReplace', onCacheReplace, true)" 
             title="Update the cache from the origin server">Update Cache</button>
          <iframe class="reqList" src="./reqList" id="requestList" ></iframe>
-      </th>
-      <th class="rightColumn">
-         <table>
-         <tr>
-            <th class="buttons">
-	            <button type=button onclick="sendRequestList('removeRequest', onRemove)"
-	                 title="Remove all records of this page">Remove Request</button>
-	            <button type=button onclick="sendRequestList('toggleIgnore', onIgnore)"
-	                 title="Do not cache the selected page">Toggle Ignore</button>
-	            <button type=button onclick="sendRequestList('toggleLock', onLock)" 
-	                 title="Lock a page so it is not replaced in the cache">Toggle Lock</button>
-	            <select id="modeSelector" onchange="onModeChange()">
+          </div>
+	            
+  
+	<div class="rightColumn" id="rightColumn">     
+	           <button class="entryButton" type=button onclick="sendRequestList('removeRequest', onRemove)"
+                    title="Remove all records of this page">Remove Request</button>
+               <button class="entryButton" type=button onclick="sendRequestList('toggleIgnore', onIgnore)"
+                    title="Do not cache the selected page">Toggle Ignore</button>
+               <button class="entryButton" type=button onclick="sendRequestList('toggleLock', onLock)" 
+                    title="Lock a page so it is not replaced in the cache">Toggle Lock</button>   
+	            <select class="entryButton" id="modeSelector" onchange="onModeChange()">
 	              <option id="translucent">Translucent</option>
 	              <option id="transparent">Transparent</option>
 	              <option id="opaque">Opaque</option>
 	            </select>
-            </th>
-         </tr>
-         </table>
+	            <br><br>
                <span>URL:</span><a id=urlLink>Select a cache entry</a><br>
                <span>Status code:</span><span id="statusCodeText"></span><br>
                <span>ETag:</span><span id="etagText"></span><br>
@@ -320,13 +313,8 @@
 		          <option value="responseSource">Response source</option>
 		          <option value="requestSource">Request source</option>
 		          <option value="transcoder">Set transcoder</option>
-		         </select>
+		         </select><br>
                <iframe class="preview" id=preview></iframe>
-      </th>
-      
-      </tr>
-  </table>
-	
-	
+	</div>
   </body>
 </html>

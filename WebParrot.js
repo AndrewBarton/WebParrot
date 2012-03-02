@@ -77,11 +77,13 @@ function requestBegin(request, response, next) {
    var parsedUrl = urlMod.parse('http://' + request.headers.host);
    //if the request is addressed to our server, and is not the demo with a query string attached.
    if(parsedUrl.port == proxyPort) {
-      if((!request.url.match('demo') || currentEntry.request.headers.from == 'passed@through.com')  && !urlMod.parse(request.url).query) {
+      
+      if( !(entries[request.url+'0'] && entries[request.url+'0'].isSourceMap) && (request.url.indexOf('demo', request.url.length - 'demo'.length) == -1 || request.headers.from == 'passed@through.com')) {
          log.log('passing request to API:' + request.url, 3);
          next();
          return;
       }else {
+         
          request.headers.from = 'passed@through.com';
       }
       
@@ -139,7 +141,7 @@ function requestBegin(request, response, next) {
  * @returns {Boolean}
  */
 function canTranscode(entry) {
-   if(entry.statusCode != 304) {
+   if(entry.statusCode && entry.statusCode != 304 && entry.statusCode < 400) {
       return (entry.transcodeName != ''
          && entry.headers
          && (!entry.headers['content-encoding'] || entry.headers['content-encoding'].search('gzip') == -1)

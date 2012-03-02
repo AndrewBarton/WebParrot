@@ -43,7 +43,11 @@ app.post(apiPageUrl, function(req, res) {
       if(contents.requestSource) {
          var entry = exports.getCachedRequest(contents.requestSource);
          
-         var text = 'method: ' + entry.request.method + '\n' + entry.request.headers + '\n' + entry.reqData;
+         var text = 'method: ' + entry.request.method + '\n';
+         for(var p in entry.request.headers) {
+            text += p + ':' + entry.request.headers[p] + '\n';
+         }
+         text += '\n' + entry.reqData;
          res.send(text);
       }
       
