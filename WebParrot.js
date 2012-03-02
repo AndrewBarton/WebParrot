@@ -141,6 +141,7 @@ function requestBegin(request, response, next) {
 function canTranscode(entry) {
    if(entry.statusCode != 304) {
       return (entry.transcodeName != ''
+         && entry.headers
          && (!entry.headers['content-encoding'] || entry.headers['content-encoding'].search('gzip') == -1)
          && ( entry.headers['content-type'] && (entry.headers['content-type'].search('javascript') != -1
          || entry.headers['content-type'].search('text') != -1)));

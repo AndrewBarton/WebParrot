@@ -36,9 +36,9 @@ exports.transcode = function(body, params, entry) {
       var entries = api.getCachedReqsuests();
       var newUrl = entry.request.url;
       if(newUrl.match('\\?')) {
-         newUrl += '&sourceMap' + i + '=yes';
+         newUrl += '&source_map' + i + '=yes';
       }else {
-         newUrl += '?sourceMap' + i + '=yes';
+         newUrl += '?source_map' + i + '=yes';
       }
       newUrl += '0';
       entries[newUrl] = Object.create(entry);
