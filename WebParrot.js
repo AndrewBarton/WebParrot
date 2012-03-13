@@ -7,10 +7,9 @@ var express = require('express');
 var crypto = require('crypto');
 var log = require('./parrotLogger');
 var urlMod = require('url');
+var fs = require('fs');
+var options = require('./options');
 
-var proxyPort = 9090;
-var defaultTranscoder = 'traceurCompiler';
-var defaultParameters = null;
 var entries = Object.create(null);
 var mode = require('./modes/Translucent');
 var strip = false;
@@ -25,13 +24,13 @@ process.on('uncaughtException', function(err) {
 
 
 
-
-parseArgs();
+options.parseArgs(process.argv);
+log.logLevel = options.logLevel;
 
 var app = express.createServer();
 exports.app = app;
-exports.proxyPort = proxyPort;
-log.log('Proxy running on port: ' + proxyPort, 0);
+exports.proxyPort = options.proxyPort;
+log.log('Proxy running on port: ' + options.proxyPort, 0);
 
 
 
@@ -61,8 +60,8 @@ function requestBegin(request, response, next) {
          expires:null,
          newCache:false,
          cacheChecked:false,
-         transcodeName:defaultTranscoder,
-         transcodeParams:defaultParameters,
+         transcodeName:options.defaultTranscoder,
+         transcodeParams:options.defaultParameters,
          timeRetrieved:new Date(),
          timeChecked:new Date()
    };
@@ -76,7 +75,7 @@ function requestBegin(request, response, next) {
    
    var parsedUrl = urlMod.parse('http://' + request.headers.host);
    //if the request is addressed to our server, and is not the demo with a query string attached.
-   if(parsedUrl.port == proxyPort) {
+   if(parsedUrl.port == options.proxyPort) {
       
       if( !(entries[request.url+'0'] && entries[request.url+'0'].isSourceMap) && (request.url.indexOf('demo', request.url.length - 'demo'.length) == -1 || request.headers.from == 'passed@through.com')) {
          log.log('passing request to API:' + request.url, 3);
@@ -89,11 +88,10 @@ function requestBegin(request, response, next) {
       
    }
    
+   
    //when the data part of the request is received, write out the data part of the 
    //request to the server
    addRequestDataListener(request, currentEntry, mdSum);
-   
-   //same as above except with the end of the request
    
    request.addListener('end', function() {
       
@@ -114,8 +112,11 @@ function requestBegin(request, response, next) {
       }
       
       
-      //if there is not a parrot response
-      if(!parrotResponse) {
+      //if there is not a parrot response and it is cachable
+      if(!parrotResponse || !canCache(currentEntry)) {
+         if(!canCache(currentEntry)) {
+            log.log('Did not cache due to cache include/exclude rules: ' + currentEntry.id);
+         }
          noEntry(request, response, currentEntry);
       }else {
          sendParrotResponse(parrotResponse, response);
@@ -171,6 +172,7 @@ function canTranscode(entry) {
  * @param currentEntry data on the current request
  */
 function noEntry(request, response, currentEntry) {
+   
    var options = urlMod.parse(request.url);
    options.headers = request.headers;
    var proxyRequest = http.request(options);
@@ -224,8 +226,56 @@ function noEntry(request, response, currentEntry) {
 
 
 
-
-
+/**
+ * Returns true if entry is to be cached, false otherwise. Determination is based upon options.include and options.exclude.
+ * Note that include is inclusive (any included header or status code will include the entry) 
+ * and exclude is exclusive (any excluded headers or status will exclude the entry).
+ * @param currentEntry
+ * @returns {Boolean} whether to cache this entry or not.
+ */
+function canCache(currentEntry) {
+   var keep = false;
+   //first we check if we want to include this entry, if no includes are specified, then keep all
+   if(options.include) {
+      if(options.include.status && options.include.status != 'all') {
+         for(var x in options.include.status) {
+            keep |= options.include.status[x] == currentEntry.statusCode;
+         }
+      }
+      if(options.include.status == 'all') {
+         keep = true;
+      }
+      
+      if(options.include.headers) {
+         for(var x in options.include.headers) {
+            keep |= options.include.headers[x] == currentEntry.headers[x];
+         }
+      }
+   }else {
+      keep = true;
+   }
+   
+   
+   //next we check if we want to exclude this entry, if no excludes are specified, then keep all
+   if(options.exclude && keep){
+      var exclude = false;
+      if(options.exclude.status) {
+         for(var x in options.exclude.status) {
+            exclude |= options.exclude.status[x] == currentEntry.statusCode;
+         }
+      }
+      
+      if(options.exclude.headers) {
+         for(var x in options.exclude.headers) {
+            exclude |= options.exclude.headers[x] == currentEntry.headers[x];
+         }
+      }
+      keep = !exclude;
+   }
+   
+   return keep;
+   
+}
 
 
 
@@ -670,7 +720,7 @@ exports.setTranscode = function(ID, name, params) {
  * @returns {String} The default transcoders
  */
 exports.getDefaultTranscoder = function() {
-   return defaultTranscoder;
+   return options.defaultTranscoder;
 };
 
 
@@ -682,87 +732,34 @@ exports.getDefaultTranscoder = function() {
  * @returns The default transcoder parameters.
  */
 exports.getDefaultTranscoderParams = function() {
-   return defaultParameters;
+   return options.defaultParameters;
 };
+
+
+/**
+ * 
+ * @param transcoder
+ */
+exports.setDefaultTranscoder = function(transcoder) {
+   options.defaultTranscoder = transcoder;
+};
+
+
+
+/**
+ * 
+ * @param params
+ */
+exports.setDefaultTranscoderParams = function(params) {
+   options.defaultParams = params;
+};
+
 
 
 /**
  * Every module needs to use the same logger in order to use the same logging level.
  */
 exports.logger = log;
-
-
-/**
- * Parses arguments and sets the values accordingly.
- */
-function parseArgs() {
-   var args = process.argv;
-   for(var i = 2; i < args.length; i++) {
-      if(args[i] == '-v') {
-         i++;
-         if(args[i]) {
-            log.logLevel = args[i];
-         }
-         
-      }
-      if(args[i] == '-m') {
-         i++;
-         mode = require('./modes/' + args[i]);
-      }
-      if(args[i] == '-w') {
-         i++;
-         if(args[i]) {
-            exports.webPort = args[i];
-         }
-      }
-      if(args[i] == '-p') {
-         i++;
-         if(args[i]) {
-            proxyPort = args[i];
-         }
-      }
-      if(args[i].toLowerCase() == '-defaulttranscoder') {
-         i++;
-         if(args[i]) {
-            log.log('Default transcoders set to: ' + args[i], 1);
-            defaultTranscoder = args[i];
-         }
-      }
-      if(args[i].toLowerCase() == '-defaultparameters') {
-         i++;
-         if(args[i]) {
-            defaultParameters = parseParameters(args[i]);
-         }
-      }
-      if(args[i] == '-h' || args[i] == '?') {
-         var fs = require('fs');
-         
-         console.log(fs.readFileSync('./cmdHelp', 'utf-8'));
-         process.exit(0);
-      }
-      if(args[i] == '-strip') {
-         strip = true;
-      }
-   }
-}
-
-/**
- * 
- * @param paras The string containing the command line formatted parameters
- * @returns An object containing the default parameters
- */
-function parseParameters(paras) {
-   var parts = paras.split('-');
-   var json = '{';
-   parts.forEach(function(part) {
-      var subParts = part.split(':');
-      json += '"' + subParts[0] + '":"' + subParts[1] + '",';
-   });
-   json = json.substring(0, json.length-1);
-   json += '}';
-   return JSON.parse(json);
-}
-
 
 
 //need to use the body parser
@@ -772,4 +769,4 @@ app.all('*', requestBegin);
 //start up the API
 var api = require('./ParrotAPI');
 //and start the server
-app.listen(proxyPort);
+app.listen(options.proxyPort);
