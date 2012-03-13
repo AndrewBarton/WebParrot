@@ -13,11 +13,12 @@ The first time I do so the parrot acts like a normal proxy and just relays
 
 To run WebParrot use node.js to run WebParrot.js
 "node WebParrot.js [-v 0|1|2|3] [-m translucent|transparent|opaque] [-p port] [-h] 
- [-strip]"
+ [-strip][-config configFile]"
 Next set your browser to use your machine as a proxy. By default WebParrot
 uses port 9090.
 Be sure to clear your browser's cache before using (see cache issues below).
 
+There are additional parameters shown below.
 
 
 
@@ -46,6 +47,39 @@ Help: The -h argument shows help about the other arguments.
 Stripping: The -strip argument will remove all 'if-none-match' and 'if-modified-since' headers
  from all requests through the parrot. This means that the server will never respond with a
  status code '304 not modified' and effectively solves all issues related to the local cache.
+ 
+ 
+Including and Excluding:
+ Requests can be excluded or included from caching by status code or by
+ specific header names and values. By default all statuses of 200 are included
+ and statuses of 400, 401, 402, 403, 404, and 500 are excluded. Any responses
+ with the header of pragma set to 'no-parrot' will also be excluded.
+ 
+ These are set using the command line parameters:
+ Statuses to include: "-includestatus 200-201" 
+      or "-includestatus all" to include all statuses.
+      Default value: 200
+ Statuses to exclude: "-excludestatus 400-401-402"
+      or "-excludestatus none" to exclude no statuses
+      Default value: 400-401-402-403-404-500
+ Headers to include: "-includeheaders name1:value1-name2:value2"
+     
+ Headers to exclude: "-excludeheaders name1:value1-name2:value2"
+      or "-excludeheaders none" to exclude no headers
+      Default value: "pragma:no-parrot"
+ 
+ 
+ Requests are first filtered using the include parameters then those that
+ passed are excluded. If there are no include parameters then all are included.
+ If there are no exclude parameters then none are excluded. Note that in order
+ to give no include/exclude parameters then the command line parameters 
+     "-includestatus all -excludestatus none -excludeheaders none" must be used.
+     
+Config file:
+
+In order to ease use with large parameters a config file can be provided. This config file 
+uses the same parameters as the command line, but 1 per line and # to serve as a comment line.
+See config.ini for an example.
 
 Admin page:
 WebParrot also launches a http server in addition to the proxy server. This server
@@ -80,6 +114,7 @@ Requests can be set to be locked and/or ignored. Locking a request makes it so
  makes it so that the request is always treated as unknown. Thus in translucent
  mode the server will always receive the request and in opaque mode a 404 will
  always be delivered (thus locking only makes sense in translucent mode).
+ 
 
 Refreshing server Cache:
  WebParrot can check if there is an update to the cache and update the cache
@@ -114,6 +149,9 @@ Transcoders:
 WebParrot can send modified content from its cache to the client. The modules that
  do this are called transcoders and are to be located in the transcoders folder.
  See transcoderReadme.txt for more information.
+ 
+ The default transcoder can be set with the command line parameter [-defaulttranscoder <transcoder1-transcoder2>]
+ The default parameters for the transcoders can be set with the command line parameter [-defaultparameters <name1:value1-name2:value2>]
 
 
 Copyright Andrew Barton andrewbbarton@gmail.com,  2012
