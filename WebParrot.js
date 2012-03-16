@@ -42,7 +42,7 @@ log.log('Proxy running on port: ' + options.proxyPort, 0);
 function requestBegin(request, response, next) {
    log.log('request received: ' + request.url, 3);
    //I'M A HACK, REMOVE ME!!!
-   //if a reuqest is proxied, then it has the whole http part infront
+   //if a request is proxied, then it has the whole http part infront
    //else it does not, this slices off the / so we don't end up with /http://blah
    request.url = request.url.slice(1);
    var currentEntry = { request : request,
@@ -77,12 +77,14 @@ function requestBegin(request, response, next) {
    //if the request is addressed to our server, and is not the demo with a query string attached.
    if(parsedUrl.port == options.proxyPort) {
       
-      if( !(entries[request.url+'0'] && entries[request.url+'0'].isSourceMap) && (request.url.indexOf('demo', request.url.length - 'demo'.length) == -1 || request.headers.from == 'passed@through.com')) {
+      if(!(entries[request.url+'0'] && entries[request.url+'0'].isSourceMap) 
+            && (request.url == 'demo' 
+                  || request.headers.from == 'passed@through.com')) {
          log.log('passing request to API:' + request.url, 3);
          next();
          return;
       }else {
-         
+         console.log('demo passing through proxy');
          request.headers.from = 'passed@through.com';
       }
       
