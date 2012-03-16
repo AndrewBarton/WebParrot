@@ -13,6 +13,6 @@ app.get('/?demo', function(req, res) {
    var date = new Date(Date.now());
    var temp = demoPage.replace('%DATE', date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds());
    temp = temp.replace('%PROXY', req.headers['from'] == 'passed@through.com' ? 'Passed through proxy' : 'NOT passed through proxy');
-   res.send(temp);
+   res.end(temp);
 });
 fs.readFile('./public/demo.html', 'utf8', onStarterRead);
