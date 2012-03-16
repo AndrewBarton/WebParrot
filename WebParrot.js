@@ -113,13 +113,16 @@ function requestBegin(request, response, next) {
       
       
       //if there is not a parrot response and it is cachable
-      if(!parrotResponse || !canCache(currentEntry)) {
-         if(!canCache(currentEntry)) {
-            log.log('Did not cache due to cache include/exclude rules: ' + currentEntry.id);
-         }
+      if(!parrotResponse) {
          noEntry(request, response, currentEntry);
       }else {
-         sendParrotResponse(parrotResponse, response);
+         if(!canCache(parrotResponse)) {
+            log.log('Did not cache due to cache include/exclude rules: ' + currentEntry.id, 1);
+            noEntry(request, response, currentEntry);
+         }else {
+            sendParrotResponse(parrotResponse, response);
+
+         }
       }
       
       
@@ -192,7 +195,7 @@ function noEntry(request, response, currentEntry) {
       
       //if there is a record for this ID and it is not locked
       //lastly save the headers of the response for later
-         if(entries[currentEntry.id]  && !entries[currentEntry.id].lock) {
+      if(entries[currentEntry.id]  && !entries[currentEntry.id].lock) {
          currentEntry.headers = proxyResponse.headers;
          currentEntry.statusCode = proxyResponse.statusCode;
       }
@@ -238,6 +241,7 @@ function canCache(currentEntry) {
    //first we check if we want to include this entry, if no includes are specified, then keep all
    if(options.include) {
       if(options.include.status && options.include.status != 'all') {
+         
          for(var x in options.include.status) {
             keep |= options.include.status[x] == currentEntry.statusCode;
          }
@@ -254,7 +258,6 @@ function canCache(currentEntry) {
    }else {
       keep = true;
    }
-   
    
    //next we check if we want to exclude this entry, if no excludes are specified, then keep all
    if(options.exclude && keep){
