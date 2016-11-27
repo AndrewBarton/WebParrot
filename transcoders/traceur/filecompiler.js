@@ -54,7 +54,7 @@
     dir = '';
     for (var i = 0; i < parts.length; i++) {
       dir += parts[i] + '/';
-      if (!path.existsSync(dir)) {
+      if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, 0x1FF);
       }
     }
